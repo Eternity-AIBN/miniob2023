@@ -126,6 +126,87 @@ RC Table::create(int32_t table_id,
   return rc;
 }
 
+// RC Table::drop(const char *path, 
+//                  const char *base_dir)
+// {
+
+//   RC rc = RC::SUCCESS;
+
+//   // drop indexes first
+//   for(Index *index : indexes_){
+//     index->drop();
+//   }
+
+//   // destory record handler
+//   record_handler_->close();
+//   delete record_handler_;
+//   record_handler_ = nullptr;
+
+//   // destory buffer pool and remove data file
+//   std::string data_file = table_data_file(base_dir, name());
+//   BufferPoolManager &bpm = BufferPoolManager::instance();
+//   rc = bpm.remove_file(data_file.c_str());
+
+//   // remove meta file
+//   int remove_ret = ::remove(path);
+
+//   LOG_INFO("Successfully drop table %s:%s", base_dir, name());
+//   return rc;
+// }
+
+RC Table::drop(const char *path, 
+                 const char *base_dir)
+{
+
+  // RC rc = RC::SUCCESS;
+
+  RC rc = sync();//刷新所有脏页
+
+  if(rc != RC::SUCCESS) return rc;
+
+  // drop indexes first
+  const int index_num = table_meta_.index_num();
+  for (int i = 0; i < index_num; i++) {  // 清理所有的索引相关文件数据与索引元数据
+      ((BplusTreeIndex*)indexes_[i])->close();
+      const IndexMeta* index_meta = table_meta_.index(i);
+      std::string index_file = table_index_file(base_dir, name(), index_meta->name());
+      if(unlink(index_file.c_str()) != 0) {
+          LOG_ERROR("Failed to remove index file=%s, errno=%d", index_file.c_str(), errno);
+          return RC::GENERIC_ERROR;
+      }
+  }
+
+  // destory record handler
+  record_handler_->close();
+  delete record_handler_;
+  record_handler_ = nullptr;
+
+  // destory buffer pool and remove data file
+  std::string data_file = table_data_file(base_dir, name());
+  // BufferPoolManager &bpm = BufferPoolManager::instance();
+  // rc = bpm.remove_file(data_file.c_str());
+  if(unlink(data_file.c_str()) != 0) { // 删除描述表元数据的文件
+      LOG_ERROR("Failed to remove data file=%s, errno=%d", data_file.c_str(), errno);
+      return RC::GENERIC_ERROR;
+  }
+
+  // std::string text_data_file = std::string(base_dir) + "/" + name() + TABLE_TEXT_DATA_SUFFIX;
+  // if(unlink(text_data_file.c_str()) != 0) { // 删除表实现text字段的数据文件（后续实现了text case时需要考虑，最开始可以不考虑这个逻辑）
+  //     LOG_ERROR("Failed to remove text data file=%s, errno=%d", text_data_file.c_str(), errno);
+  //     return RC::GENERIC_ERROR;
+  // }
+
+  // remove meta file
+  // int remove_ret = ::remove(path);
+  if(unlink(path) != 0) {
+      LOG_ERROR("Failed to remove meta file=%s, errno=%d", path, errno);
+      return RC::GENERIC_ERROR;
+  }
+
+  LOG_INFO("Successfully drop table %s:%s", base_dir, name());
+  return rc;
+}
+
 RC Table::open(const char *meta_file, const char *base_dir)
 {
   // 加载元数据文件

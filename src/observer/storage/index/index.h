@@ -45,6 +45,8 @@ public:
     return index_meta_;
   }
 
+  // virtual RC drop() = 0;
+
   /**
    * @brief 插入一条数据
    * 
