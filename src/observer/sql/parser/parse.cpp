@@ -47,3 +47,14 @@ RC parse(const char *st, ParsedSqlResult *sql_result)
   sql_parse(st, sql_result);
   return RC::SUCCESS;
 }
+
+// void value_init_date(Value *value, int32_t date)
+// {
+
+// }
+
+// void value_destroy(Value *value)
+// {
+//   value->set_type(UNDEFINED);
+//   free(value->data);
+// }

@@ -326,3 +326,6 @@ public:
 private:
   std::vector<std::unique_ptr<ParsedSqlNode>> sql_nodes_;  ///< 这里记录SQL命令。虽然看起来支持多个，但是当前仅处理一个
 };
+
+// void value_init_date(Value *value, int32_t date);
+// void value_destroy(Value *value);

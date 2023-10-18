@@ -90,10 +90,18 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
 
   filter_unit = new FilterUnit;
 
+  bool flag = 0;    // 判断是否进行日期的比较，如 date = "2022-06-01"
+
   if (condition.left_is_attr) {
     Table *table = nullptr;
     const FieldMeta *field = nullptr;
     rc = get_table_and_field(db, default_table, tables, condition.left_attr, table, field);
+
+    const AttrType field_type = field->type();
+    if (field_type == DATES){  
+      flag = 1;
+    }
+
     if (rc != RC::SUCCESS) {
       LOG_WARN("cannot find attr");
       return rc;
@@ -102,6 +110,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     filter_obj.init_attr(Field(table, field));
     filter_unit->set_left(filter_obj);
   } else {
+    // TODO 日期比较时，暂时只考虑了 date = "2022-06-01" 这种情况，还没考虑 "2022-06-01" = date
     FilterObj filter_obj;
     filter_obj.init_value(condition.left_value);
     filter_unit->set_left(filter_obj);
@@ -119,9 +128,25 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     filter_obj.init_attr(Field(table, field));
     filter_unit->set_right(filter_obj);
   } else {
-    FilterObj filter_obj;
-    filter_obj.init_value(condition.right_value);
-    filter_unit->set_right(filter_obj);
+    if (flag == 1){
+      int32_t date = -1;
+      RC rc = string_to_date(condition.right_value.get_string(), date);
+      if (rc != RC::SUCCESS){
+        LOG_TRACE("field_type is date error");
+        return rc;
+      }
+      Value values = condition.right_value;
+      values.set_date(date);
+
+      FilterObj filter_obj;
+      filter_obj.init_value(values);
+      filter_unit->set_right(filter_obj);
+    }
+    else{
+      FilterObj filter_obj;
+      filter_obj.init_value(condition.right_value);
+      filter_unit->set_right(filter_obj);
+    }
   }
 
   filter_unit->set_comp(comp);
