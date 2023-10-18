@@ -122,7 +122,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %token <number> NUMBER
 %token <floats> FLOAT
 %token <string> ID
-%token <string> DATE_T
+%token <string> DATE
 %token <string> SSS
 //非终结符
 
