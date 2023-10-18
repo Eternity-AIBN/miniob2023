@@ -39,7 +39,8 @@ RC InsertStmt::create(Db *db, InsertSqlNode &inserts, Stmt *&stmt)
   }
 
   // check the fields number
-  const Value *values = inserts.values.data();
+  // const Value *values = inserts.values.data();
+  Value *values = inserts.values.data();
   const int value_num = static_cast<int>(inserts.values.size());
   const TableMeta &table_meta = table->table_meta();
   const int field_num = table_meta.field_num() - table_meta.sys_field_num();
@@ -47,7 +48,7 @@ RC InsertStmt::create(Db *db, InsertSqlNode &inserts, Stmt *&stmt)
     LOG_WARN("schema mismatch. value num=%d, field num in schema=%d", value_num, field_num);
     return RC::SCHEMA_FIELD_MISSING;
   }
-
+  
   // check fields type
   const int sys_field_num = table_meta.sys_field_num();
   for (int i = 0; i < value_num; i++) {
@@ -59,15 +60,19 @@ RC InsertStmt::create(Db *db, InsertSqlNode &inserts, Stmt *&stmt)
         int32_t date = -1;
         RC rc = string_to_date(values[i].get_string(), date);
         if (rc != RC::SUCCESS){
-          LOG_TRACE("field_type is date error");
+          LOG_WARN("field_type is date error");
           return rc;
         }
-        Value *values_new = inserts.values.data();
-        values_new[i].set_date(date);
+        // printf("11111: %s\n", values[i].get_string().c_str());  // 2020-01-21
+        values[i].set_date(date);
+        // printf("22222: %d\n", values[i].get_int());             // 20200121
+        // printf("33333: %s\n", values[i].get_string().c_str());  // 20200121
       }
-      LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d",
+      else{
+        LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d",
           table_name, field_meta->name(), field_type, value_type);
-      return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+      }
     }
   }
 

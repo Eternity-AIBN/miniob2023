@@ -130,8 +130,9 @@ union YYSTYPE
   char *                            string;
   int                               number;
   float                             floats;
+  char *                            dates;
 
-#line 135 "yacc_sql.hpp"
+#line 136 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

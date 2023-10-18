@@ -1260,7 +1260,7 @@ yylval->floats=(float)(atof(yytext)); RETURN_TOKEN(FLOAT);
 case 5:
 YY_RULE_SETUP
 #line 82 "lex_sql.l"
-yylval->string=strdup(yytext); RETURN_TOKEN(DATE);
+yylval->dates=strdup(yytext); RETURN_TOKEN(DATE);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP

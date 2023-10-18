@@ -120,7 +120,7 @@ void Value::set_date(int val)
 {
   attr_type_ = DATES;
   num_value_.date_value_ = val;
-  str_value_.assign(date_to_string(num_value_.date_value_).c_str(), 16);
+  // str_value_.assign(date_to_string(num_value_.date_value_).c_str(), 16);
   length_ = sizeof(val);
 }
 
@@ -154,9 +154,9 @@ const char *Value::data() const
     case CHARS: {
       return str_value_.c_str();
     } break;
-    case DATES: {
-      return str_value_.c_str();
-    } break;
+    // case DATES: {
+    //   return str_value_.c_str();
+    // } break;
     default: {
       return (const char *)&num_value_;
     } break;
@@ -180,7 +180,11 @@ std::string Value::to_string() const
       os << str_value_;
     } break;
     case DATES: {
-      os << num_value_.date_value_;
+      // os << num_value_.date_value_;
+      // TODO 转换日期展示格式
+      char buf[16] = {0};
+      snprintf(buf,sizeof(buf),"%04d-%02d-%02d", num_value_.date_value_/10000, (num_value_.date_value_%10000)/100, num_value_.date_value_%100);
+      return buf;
     } break;
     default: {
       LOG_WARN("unsupported attr type: %d", attr_type_);
