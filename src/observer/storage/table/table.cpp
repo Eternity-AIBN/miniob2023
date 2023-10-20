@@ -529,6 +529,19 @@ RC Table::delete_record(const Record &record)
   return rc;
 }
 
+RC Table::update_record(Record &record)
+{
+  RC rc = RC::SUCCESS;
+  rc = record_handler_->update_record(record.data(), table_meta_.record_size(), &record.rid());
+  if (rc != RC::SUCCESS) {
+    LOG_ERROR("Update record failed. table name=%s, rc=%s", table_meta_.name(), strrc(rc));
+    return rc;
+  }
+
+  rc = update_entry_of_indexes(record.data(), record.rid());
+  return rc;
+}
+
 RC Table::insert_entry_of_indexes(const char *record, const RID &rid)
 {
   RC rc = RC::SUCCESS;
@@ -552,6 +565,14 @@ RC Table::delete_entry_of_indexes(const char *record, const RID &rid, bool error
       }
     }
   }
+  return rc;
+}
+
+RC Table::update_entry_of_indexes(const char *record, const RID &rid)
+{
+  RC rc = RC::SUCCESS;
+  rc = delete_entry_of_indexes(record, rid, false/*error_on_not_exists*/);
+  rc = insert_entry_of_indexes(record, rid);
   return rc;
 }
 

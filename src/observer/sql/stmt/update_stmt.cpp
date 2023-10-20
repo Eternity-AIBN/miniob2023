@@ -13,14 +13,72 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "sql/stmt/update_stmt.h"
+#include "common/log/log.h"
+#include "storage/db/db.h"
+#include "storage/table/table.h"
 
-UpdateStmt::UpdateStmt(Table *table, Value *values, int value_amount)
-    : table_(table), values_(values), value_amount_(value_amount)
+UpdateStmt::UpdateStmt(Table *table, std::string attribute_name, Value values, int value_amount, FilterStmt *filter_stmt)
+    : table_(table), attribute_name_(attribute_name), values_(values), value_amount_(value_amount), filter_stmt_(filter_stmt)
 {}
 
 RC UpdateStmt::create(Db *db, const UpdateSqlNode &update, Stmt *&stmt)
 {
   // TODO
-  stmt = nullptr;
-  return RC::INTERNAL;
+  // stmt = nullptr;
+  // return RC::INTERNAL;
+
+  const char *table_name = update.relation_name.c_str();
+  if (nullptr == db || nullptr == table_name || update.attribute_name.empty()) {
+    LOG_WARN("invalid argument. db=%p, table_name=%p, attribute_name=%s",
+        db, table_name, update.attribute_name.c_str());
+    return RC::INVALID_ARGUMENT;
+  }
+
+  // check whether the table exists
+  Table *table = db->find_table(table_name);
+  if (nullptr == table) {
+    LOG_WARN("no such table. db=%s, table_name=%s", db->name(), table_name);
+    return RC::SCHEMA_TABLE_NOT_EXIST;
+  }
+
+  // const char *values = update.value.data();
+  const Value values = update.value;
+  const TableMeta &table_meta = table->table_meta();
+  const int field_num = table_meta.field_num() - table_meta.sys_field_num();
+  
+  // check fields type
+  const int sys_field_num = table_meta.sys_field_num();
+  // bool flag = 0;
+  for (int i = 0; i < field_num; i++) {  // 遍历表的所有属性，找到要更新的字段
+    const FieldMeta *field_meta = table_meta.field(i + sys_field_num);
+    const std::string field_name = field_meta->name();
+    if (field_name == update.attribute_name) {  
+      // flag = 1;
+      std::unordered_map<std::string, Table *> table_map;
+      table_map.insert(std::pair<std::string, Table *>(std::string(table_name), table));
+
+      FilterStmt *filter_stmt = nullptr; 
+      RC rc = FilterStmt::create(
+          db, table, &table_map, update.conditions.data(), static_cast<int>(update.conditions.size()), filter_stmt);
+      if (rc != RC::SUCCESS) {
+        LOG_WARN("failed to create filter statement. rc=%d:%s", rc, strrc(rc));
+        return rc;
+      }
+      stmt = new UpdateStmt(table, update.attribute_name, values, 1, filter_stmt);  // 当前实现update单个字段即可
+      return RC::SUCCESS;
+    }
+  }
+  // 要更新的字段不存在
+  LOG_WARN("field type mismatch. table=%s", table_name);
+  return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+  // if (flag == 0){   // 要更新的字段不存在
+  //   LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d",
+  //         table_name, field_meta->name(), field_type, value_type);
+  //   return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+  // }
+
+  // everything alright
+  // stmt = new UpdateStmt(table, values, value_num);
+  // stmt = new UpdateStmt(table, values, 1, filter_stmt);  // 当前实现update单个字段即可
+  // return RC::SUCCESS;
 }

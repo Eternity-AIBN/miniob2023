@@ -196,6 +196,25 @@ public:
     return RC::NOTFOUND;
   }
 
+  RC update_cell(std::string attribute_name, Value new_value) const
+  {
+    for (size_t i = 0; i < speces_.size(); ++i) {
+      const FieldExpr *field_expr = speces_[i];
+      const Field &field = field_expr->field();
+      if (0 == strcmp(attribute_name.c_str(), field.field_name())) { // 找到要更新的字段
+        const FieldMeta *field_meta = field_expr->field().meta();
+        // cell.set_type(field_meta->type());
+        // cell.set_data(this->record_->data() + field_meta->offset(), field_meta->len());
+        
+        // char *old_data = this->record_->data() + field_meta->offset();
+        const char *new_data = new_value.data();
+        memcpy(this->record_->data() + field_meta->offset(), new_data, field_meta->len());
+        return RC::SUCCESS;
+      }
+    }
+    return RC::NOTFOUND;
+  }
+
 #if 0
   RC cell_spec_at(int index, const TupleCellSpec *&spec) const override
   {
