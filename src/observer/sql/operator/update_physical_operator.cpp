@@ -40,10 +40,7 @@ RC UpdatePhysicalOperator::next()
 
     RowTuple *row_tuple = static_cast<RowTuple *>(tuple);
 
-    // Value vvv;
-    // RC tmp = row_tuple->cell_at(2, vvv);
-
-    // TODO 在这里更新record？？？
+    // 在这里更新record
     rc = row_tuple->update_cell(attribute_name_, values_);
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to update record: %s", strrc(rc));

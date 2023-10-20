@@ -58,6 +58,11 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update, Stmt *&stmt)
       table_map.insert(std::pair<std::string, Table *>(std::string(table_name), table));
 
       FilterStmt *filter_stmt = nullptr; 
+      // if (update.conditions.size() == 0){  // 不带条件的更新
+      //   stmt = new UpdateStmt(table, update.attribute_name, values, 1, filter_stmt);  // 当前实现update单个字段即可
+      //   return RC::SUCCESS;
+      // } 
+
       RC rc = FilterStmt::create(
           db, table, &table_map, update.conditions.data(), static_cast<int>(update.conditions.size()), filter_stmt);
       if (rc != RC::SUCCESS) {

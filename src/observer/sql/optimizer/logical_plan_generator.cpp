@@ -218,6 +218,15 @@ RC LogicalPlanGenerator::create_plan(
   unique_ptr<LogicalOperator> table_get_oper(new TableGetLogicalOperator(table, fields, false/*readonly*/));
 
   unique_ptr<LogicalOperator> predicate_oper;
+
+  // RC rc = RC::SUCCESS;
+  // if(nullptr != filter_stmt){   // 不带条件的更新
+  //   rc = create_plan(filter_stmt, predicate_oper);
+  //   if (rc != RC::SUCCESS) {
+  //     return rc;
+  //   }
+  // }
+
   RC rc = create_plan(filter_stmt, predicate_oper);
   if (rc != RC::SUCCESS) {
     return rc;

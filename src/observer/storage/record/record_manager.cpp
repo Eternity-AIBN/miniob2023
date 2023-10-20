@@ -272,10 +272,10 @@ RC RecordPageHandler::update_record(const char *data, int record_size, RID *rid)
 
     // 找到空闲位置
     Bitmap bitmap(bitmap_, page_header_->record_capacity);
-    int    index = bitmap.get_bit(rid->slot_num);
+    // int    index = bitmap.get_bit(rid->slot_num);
 
     // assert index < page_header_->record_capacity
-    char *record_data = get_record_data(index);
+    char *record_data = get_record_data(rid->slot_num);
     memcpy(record_data, data, page_header_->record_real_size);
 
     frame_->mark_dirty();
