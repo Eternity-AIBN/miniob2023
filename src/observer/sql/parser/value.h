@@ -76,6 +76,8 @@ public:
 
   int compare(const Value &other) const;
 
+  int like(const Value &other) const;
+
   const char *data() const;
   int length() const
   {

@@ -47,6 +47,7 @@ struct RelAttrSqlNode
 enum CompOp 
 {
   EQUAL_TO,     ///< "="
+  LIKE_TO,      ///< LIKE
   LESS_EQUAL,   ///< "<="
   NOT_EQUAL,    ///< "<>"
   LESS_THAN,    ///< "<"

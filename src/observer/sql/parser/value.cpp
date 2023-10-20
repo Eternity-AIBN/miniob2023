@@ -230,6 +230,10 @@ int Value::compare(const Value &other) const
   return -1;  // TODO return rc?
 }
 
+int Value::like(const Value &other) const{
+  return common::compare_string_like(this->str_value_.c_str(), other.str_value_.c_str());
+}
+
 int Value::get_int() const
 {
   switch (attr_type_) {

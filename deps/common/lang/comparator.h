@@ -20,5 +20,7 @@ namespace common {
 int compare_int(void *arg1, void *arg2);
 int compare_float(void *arg1, void *arg2);
 int compare_string(void *arg1, int arg1_max_length, void *arg2, int arg2_max_length);
+bool compare_match(const char *text, const char *pattern);
+int compare_string_like(const char *arg1, const char *arg2);
 
 }

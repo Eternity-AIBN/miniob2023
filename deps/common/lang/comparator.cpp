@@ -60,4 +60,37 @@ int compare_string(void *arg1, int arg1_max_length, void *arg2, int arg2_max_len
   return 0;
 }
 
+bool compare_match(const char* pattern, const char* text) {
+    if (*pattern == '\0' && *text == '\0') {
+        return true; // Both strings are empty, match successful.
+    }
+
+    if (*pattern == '%' && *(pattern + 1) == '\0') {
+        return true; // Pattern ends with '%', match successful.
+    }
+
+    if (*pattern == '%' && *(pattern + 1) != '\0') {
+        // If the pattern has a '%' and it's not the last character, we need to find a match.
+        while (*text != '\0') {
+            if (common::compare_match(pattern + 1, text)) {
+                return true; // Match found.
+            }
+            text++;
+        }
+        return false; // No match found.
+    }
+
+    if (*pattern == *text || *pattern == '_') {
+        // If characters match or pattern is '_', move to the next characters.
+        return common::compare_match(pattern + 1, text + 1);
+    }
+
+    return false; // No match.
+}
+
+int compare_string_like(const char *text, const char *pattern)
+{
+  return common::compare_match(pattern, text);
+}
+
 } // namespace common

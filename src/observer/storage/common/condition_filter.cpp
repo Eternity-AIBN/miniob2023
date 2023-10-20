@@ -138,11 +138,18 @@ bool DefaultConditionFilter::filter(const Record &rec) const
     right_value.set_value(right_.value);
   }
 
+  if(comp_op_ == LIKE_TO){
+      int cmp_result = left_value.like(right_value);
+      return 0 == cmp_result;
+  }
+
   int cmp_result = left_value.compare(right_value);
 
   switch (comp_op_) {
     case EQUAL_TO:
       return 0 == cmp_result;
+    // case LIKE_TO:
+    //   return ; // TODO
     case LESS_EQUAL:
       return cmp_result <= 0;
     case NOT_EQUAL:
