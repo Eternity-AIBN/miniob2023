@@ -60,6 +60,16 @@ public:
     return comp_;
   }
 
+  void set_exist_not(bool exist_not)
+  {
+    exist_not_ = exist_not;
+  }
+
+  bool exist_not() const
+  {
+    return exist_not_;
+  }
+
   void set_left(const FilterObj &obj)
   {
     left_ = obj;
@@ -80,6 +90,7 @@ public:
 
 private:
   CompOp comp_ = NO_OP;
+  bool exist_not_;
   FilterObj left_;
   FilterObj right_;
 };

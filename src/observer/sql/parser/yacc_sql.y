@@ -93,6 +93,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         INFILE
         EXPLAIN
         LIKE
+        NOT
         EQ
         LT
         GT
@@ -106,6 +107,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   ConditionSqlNode *                condition;
   Value *                           value;
   enum CompOp                       comp;
+  // bool                              exist_not;
   RelAttrSqlNode *                  rel_attr;
   std::vector<AttrInfoSqlNode> *    attr_infos;
   AttrInfoSqlNode *                 attr_info;
@@ -134,6 +136,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <value>               value
 %type <number>              number
 %type <comp>                comp_op
+// %type <exist_not>           exist_not_op
 %type <rel_attr>            rel_attr
 %type <attr_infos>          attr_def_list
 %type <attr_info>           attr_def
@@ -600,6 +603,7 @@ condition:
       $$->right_is_attr = 0;
       $$->right_value = *$3;
       $$->comp = $2;
+      $$->exist_not = 0;
 
       delete $1;
       delete $3;
@@ -612,6 +616,7 @@ condition:
       $$->right_is_attr = 0;
       $$->right_value = *$3;
       $$->comp = $2;
+      $$->exist_not = 0;
 
       delete $1;
       delete $3;
@@ -624,6 +629,7 @@ condition:
       $$->right_is_attr = 1;
       $$->right_attr = *$3;
       $$->comp = $2;
+      $$->exist_not = 0;
 
       delete $1;
       delete $3;
@@ -636,9 +642,62 @@ condition:
       $$->right_is_attr = 1;
       $$->right_attr = *$3;
       $$->comp = $2;
+      $$->exist_not = 0;
 
       delete $1;
       delete $3;
+    }
+    | rel_attr NOT comp_op value
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 1;
+      $$->left_attr = *$1;
+      $$->right_is_attr = 0;
+      $$->right_value = *$4;
+      $$->comp = $3;
+      $$->exist_not = 1;
+
+      delete $1;
+      delete $4;
+    }
+    | value NOT comp_op value 
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 0;
+      $$->left_value = *$1;
+      $$->right_is_attr = 0;
+      $$->right_value = *$4;
+      $$->comp = $3;
+      $$->exist_not = 1;
+
+      delete $1;
+      delete $4;
+    }
+    | rel_attr NOT comp_op rel_attr
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 1;
+      $$->left_attr = *$1;
+      $$->right_is_attr = 1;
+      $$->right_attr = *$4;
+      $$->comp = $3;
+      $$->exist_not = 1;
+
+      delete $1;
+      delete $4;
+    }
+    | value NOT comp_op rel_attr
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 0;
+      $$->left_value = *$1;
+      $$->right_is_attr = 1;
+      $$->right_attr = *$4;
+      $$->comp = $3;
+      $$->exist_not = 1;
+
+      delete $1;
+      delete $4;
     }
     ;
 

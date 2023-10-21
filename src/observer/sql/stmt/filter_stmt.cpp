@@ -152,6 +152,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
   }
 
   filter_unit->set_comp(comp);
+  filter_unit->set_exist_not(condition.exist_not);
 
   // 检查两个类型是否能够比较
   return rc;

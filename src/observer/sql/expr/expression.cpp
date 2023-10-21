@@ -79,8 +79,8 @@ RC CastExpr::try_get_value(Value &value) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ComparisonExpr::ComparisonExpr(CompOp comp, unique_ptr<Expression> left, unique_ptr<Expression> right)
-    : comp_(comp), left_(std::move(left)), right_(std::move(right))
+ComparisonExpr::ComparisonExpr(CompOp comp, bool exist_not, unique_ptr<Expression> left, unique_ptr<Expression> right)
+    : comp_(comp), exist_not_(exist_not), left_(std::move(left)), right_(std::move(right))
 {}
 
 ComparisonExpr::~ComparisonExpr()
@@ -92,8 +92,11 @@ RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &re
   if(comp_ == LIKE_TO){
       int cmp_result = left.like(right);
       result = (1 == cmp_result);
+      if(exist_not_ == 1){
+        result = !result;
+      }
       return rc;
-  }
+  } 
   int cmp_result = left.compare(right);
   result = false;
   switch (comp_) {
@@ -122,6 +125,10 @@ RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &re
       LOG_WARN("unsupported comparison. %d", comp_);
       rc = RC::INTERNAL;
     } break;
+  }
+
+  if(exist_not_ == 1){
+    result = !result;
   }
 
   return rc;

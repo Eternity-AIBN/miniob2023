@@ -195,7 +195,7 @@ private:
 class ComparisonExpr : public Expression 
 {
 public:
-  ComparisonExpr(CompOp comp, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right);
+  ComparisonExpr(CompOp comp, bool exist_not, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right);
   virtual ~ComparisonExpr();
 
   ExprType type() const override { return ExprType::COMPARISON; }
@@ -205,6 +205,8 @@ public:
   AttrType value_type() const override { return BOOLEANS; }
 
   CompOp comp() const { return comp_; }
+
+  bool exist_not() const { return exist_not_; }
 
   std::unique_ptr<Expression> &left()  { return left_;  }
   std::unique_ptr<Expression> &right() { return right_; }
@@ -223,6 +225,7 @@ public:
 
 private:
   CompOp comp_;
+  bool exist_not_;
   std::unique_ptr<Expression> left_;
   std::unique_ptr<Expression> right_;
 };

@@ -38,7 +38,7 @@ DefaultConditionFilter::DefaultConditionFilter()
 DefaultConditionFilter::~DefaultConditionFilter()
 {}
 
-RC DefaultConditionFilter::init(const ConDesc &left, const ConDesc &right, AttrType attr_type, CompOp comp_op)
+RC DefaultConditionFilter::init(const ConDesc &left, const ConDesc &right, AttrType attr_type, CompOp comp_op, bool exist_not)
 {
   if (attr_type < CHARS || attr_type > FLOATS) {
     LOG_ERROR("Invalid condition with unsupported attribute type: %d", attr_type);
@@ -54,6 +54,7 @@ RC DefaultConditionFilter::init(const ConDesc &left, const ConDesc &right, AttrT
   right_ = right;
   attr_type_ = attr_type;
   comp_op_ = comp_op;
+  exist_not_ = exist_not;
   return RC::SUCCESS;
 }
 
@@ -116,7 +117,7 @@ RC DefaultConditionFilter::init(Table &table, const ConditionSqlNode &condition)
     return RC::SCHEMA_FIELD_TYPE_MISMATCH;
   }
 
-  return init(left, right, type_left, condition.comp);
+  return init(left, right, type_left, condition.comp, condition.exist_not);
 }
 
 bool DefaultConditionFilter::filter(const Record &rec) const
@@ -140,30 +141,55 @@ bool DefaultConditionFilter::filter(const Record &rec) const
 
   if(comp_op_ == LIKE_TO){
       int cmp_result = left_value.like(right_value);
-      return 0 == cmp_result;
-  }
+      if(exist_not_ == 1){
+        return !(1 == cmp_result);
+      }
+      return 1 == cmp_result;
+  } 
 
   int cmp_result = left_value.compare(right_value);
 
-  switch (comp_op_) {
-    case EQUAL_TO:
-      return 0 == cmp_result;
-    // case LIKE_TO:
-    //   return ; // TODO
-    case LESS_EQUAL:
-      return cmp_result <= 0;
-    case NOT_EQUAL:
-      return cmp_result != 0;
-    case LESS_THAN:
-      return cmp_result < 0;
-    case GREAT_EQUAL:
-      return cmp_result >= 0;
-    case GREAT_THAN:
-      return cmp_result > 0;
+  if(exist_not_ == 1){
+    switch (comp_op_) {
+      case EQUAL_TO:
+        return !(0 == cmp_result);
+      case LESS_EQUAL:
+        return !(cmp_result <= 0);
+      case NOT_EQUAL:
+        return !(cmp_result != 0);
+      case LESS_THAN:
+        return !(cmp_result < 0);
+      case GREAT_EQUAL:
+        return !(cmp_result >= 0);
+      case GREAT_THAN:
+        return !(cmp_result > 0);
 
-    default:
-      break;
+      default:
+        break;
+    }
   }
+  else{
+    switch (comp_op_) {
+      case EQUAL_TO:
+        return 0 == cmp_result;
+      // case LIKE_TO:
+      //   return ; // TODO
+      case LESS_EQUAL:
+        return cmp_result <= 0;
+      case NOT_EQUAL:
+        return cmp_result != 0;
+      case LESS_THAN:
+        return cmp_result < 0;
+      case GREAT_EQUAL:
+        return cmp_result >= 0;
+      case GREAT_THAN:
+        return cmp_result > 0;
+
+      default:
+        break;
+    }
+  }
+  
 
   LOG_PANIC("Never should print this.");
   return cmp_result;  // should not go here
