@@ -22,7 +22,13 @@ static void wildcard_fields(Table *table, std::vector<Field> &field_metas, std::
   // }
   // select * 才需要将*展开，select count(*) 结果只会有一列
   field_metas.push_back(Field(table, table_meta.field(table_meta.sys_field_num())));
-  field_metas_show.push_back(Field(table, nullptr));
+  // field_metas_show.push_back(Field(table, nullptr));
+
+  const FieldMeta *field_meta = table_meta.field(table_meta.sys_field_num());
+  std::string agg_name =  "count(*)"; 
+  const char* agg_name_char = agg_name.c_str();
+  FieldMeta field_meta_show = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
+  field_metas_show.push_back(Field(table, &field_meta_show));
 }
 
 RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt)
@@ -119,14 +125,14 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
           default:
             break;
           }
-          if(aggop_name == "count"){
-            query_fields_show.push_back(Field(table, nullptr));
-          }else{
+          // if(aggop_name == "count"){
+          //   query_fields_show.push_back(Field(table, nullptr));
+          // }else{
             std::string agg_name = aggop_name + "(" + field_meta->name() + ")"; 
             const char* agg_name_char = agg_name.c_str();
             FieldMeta field_meta_show = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
             query_fields_show.push_back(Field(table, &field_meta_show));
-          }
+          // }
         }
       }
     } else {
@@ -164,14 +170,14 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
       default:
         break;
       }
-      if(aggop_name == "count"){
-        query_fields_show.push_back(Field(table, nullptr));
-      }else{
+      // if(aggop_name == "count"){
+      //   query_fields_show.push_back(Field(table, nullptr));
+      // }else{
         std::string agg_name = aggop_name + "(" + field_meta->name() + ")"; 
         const char* agg_name_char = agg_name.c_str();
         FieldMeta field_meta_show = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
         query_fields_show.push_back(Field(table, &field_meta_show));
-      }
+      // }
     }
   }
 
