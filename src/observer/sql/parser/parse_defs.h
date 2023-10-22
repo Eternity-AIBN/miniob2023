@@ -41,6 +41,26 @@ struct RelAttrSqlNode
 };
 
 /**
+ * @brief 描述聚合运算符
+ * @ingroup SQLParser
+ */
+enum AggOp 
+{
+  MAX_OP,
+  MIN_OP,
+  COUNT_OP,
+  AVG_OP,
+  SUM_OP
+};
+
+struct AggRelAttrSqlNode
+{
+  AggOp agg_func;              ///< aggregate function          聚合函数名
+  std::string relation_name;   ///< relation name (may be NULL) 表名
+  std::string attribute_name;  ///< attribute name              属性名
+};
+
+/**
  * @brief 描述比较运算符
  * @ingroup SQLParser
  */
@@ -92,6 +112,13 @@ struct ConditionSqlNode
 struct SelectSqlNode
 {
   std::vector<RelAttrSqlNode>     attributes;    ///< attributes in select clause
+  std::vector<std::string>        relations;     ///< 查询的表
+  std::vector<ConditionSqlNode>   conditions;    ///< 查询条件，使用AND串联起来多个条件
+};
+
+struct SelectAggSqlNode
+{
+  std::vector<AggRelAttrSqlNode>  agg_attributes;    ///< agg attributes in select clause
   std::vector<std::string>        relations;     ///< 查询的表
   std::vector<ConditionSqlNode>   conditions;    ///< 查询条件，使用AND串联起来多个条件
 };
@@ -264,6 +291,7 @@ enum SqlCommandFlag
   SCF_ERROR = 0,
   SCF_CALC,
   SCF_SELECT,
+  SCF_SELECT_AGG,
   SCF_INSERT,
   SCF_UPDATE,
   SCF_DELETE,
@@ -295,6 +323,7 @@ public:
   ErrorSqlNode              error;
   CalcSqlNode               calc;
   SelectSqlNode             selection;
+  SelectAggSqlNode          selection_agg;
   InsertSqlNode             insertion;
   DeleteSqlNode             deletion;
   UpdateSqlNode             update;

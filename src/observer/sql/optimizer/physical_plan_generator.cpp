@@ -21,7 +21,9 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/predicate_logical_operator.h"
 #include "sql/operator/predicate_physical_operator.h"
 #include "sql/operator/project_logical_operator.h"
+#include "sql/operator/project_agg_logical_operator.h"
 #include "sql/operator/project_physical_operator.h"
+#include "sql/operator/project_agg_physical_operator.h"
 #include "sql/operator/insert_logical_operator.h"
 #include "sql/operator/insert_physical_operator.h"
 #include "sql/operator/delete_logical_operator.h"
@@ -58,6 +60,10 @@ RC PhysicalPlanGenerator::create(LogicalOperator &logical_operator, unique_ptr<P
 
     case LogicalOperatorType::PROJECTION: {
       return create_plan(static_cast<ProjectLogicalOperator &>(logical_operator), oper);
+    } break;
+
+    case LogicalOperatorType::PROJECTION_AGG: {
+      return create_plan(static_cast<ProjectAggLogicalOperator &>(logical_operator), oper);
     } break;
 
     case LogicalOperatorType::INSERT: {
@@ -207,6 +213,39 @@ RC PhysicalPlanGenerator::create_plan(ProjectLogicalOperator &project_oper, uniq
   oper = unique_ptr<PhysicalOperator>(project_operator);
 
   LOG_TRACE("create a project physical operator");
+  return rc;
+}
+
+RC PhysicalPlanGenerator::create_plan(ProjectAggLogicalOperator &project_oper, unique_ptr<PhysicalOperator> &oper)
+{
+  vector<unique_ptr<LogicalOperator>> &child_opers = project_oper.children();
+
+  unique_ptr<PhysicalOperator> child_phy_oper;
+
+  RC rc = RC::SUCCESS;
+  if (!child_opers.empty()) {
+    LogicalOperator *child_oper = child_opers.front().get();
+    rc = create(*child_oper, child_phy_oper);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("failed to create project logical operator's child physical operator. rc=%s", strrc(rc));
+      return rc;
+    }
+  }
+
+  ProjectAggPhysicalOperator *project_operator = new ProjectAggPhysicalOperator;
+  project_operator->set_aggop(project_oper.aggop());
+  const vector<Field> &project_fields = project_oper.fields();
+  for (const Field &field : project_fields) {
+    project_operator->add_projection(field.table(), field.meta());
+  }
+
+  if (child_phy_oper) {
+    project_operator->add_child(std::move(child_phy_oper));
+  }
+
+  oper = unique_ptr<PhysicalOperator>(project_operator);
+
+  LOG_TRACE("create a project agg physical operator");
   return rc;
 }
 

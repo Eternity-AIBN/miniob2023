@@ -24,6 +24,7 @@ See the Mulan PSL v2 for more details. */
 #include "event/session_event.h"
 #include "sql/stmt/stmt.h"
 #include "sql/stmt/select_stmt.h"
+#include "sql/stmt/select_agg_stmt.h"
 #include "storage/default/default_handler.h"
 #include "sql/executor/command_executor.h"
 #include "sql/operator/calc_physical_operator.h"
@@ -74,6 +75,21 @@ RC ExecuteStage::handle_request_with_physical_operator(SQLStageEvent *sql_event)
           schema.append_cell(field.table_name(), field.field_name());
         } else {
           schema.append_cell(field.field_name());
+        }
+      }
+    } break;
+
+    case StmtType::SELECT_AGG: {
+      SelectAggStmt *select_agg_stmt = static_cast<SelectAggStmt *>(stmt);
+      bool with_table_name = select_agg_stmt->tables().size() > 1;
+
+      for (const Field &field : select_agg_stmt->query_fields_show()) {
+        if (nullptr != field.meta()){
+          if (with_table_name) {
+            schema.append_cell(field.table_name(), field.field_name());
+          } else {
+            schema.append_cell(field.field_name());
+          }
         }
       }
     } break;

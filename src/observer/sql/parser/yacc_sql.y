@@ -62,6 +62,11 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         INDEX
         CALC
         SELECT
+        MAX
+        MIN
+        COUNT
+        AVG
+        SUM
         DESC
         SHOW
         SYNC
@@ -107,8 +112,10 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   ConditionSqlNode *                condition;
   Value *                           value;
   enum CompOp                       comp;
+  enum AggOp                        agg;
   // bool                              exist_not;
   RelAttrSqlNode *                  rel_attr;
+  AggRelAttrSqlNode *               agg_rel_attr;
   std::vector<AttrInfoSqlNode> *    attr_infos;
   AttrInfoSqlNode *                 attr_info;
   Expression *                      expression;
@@ -116,6 +123,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   std::vector<Value> *              value_list;
   std::vector<ConditionSqlNode> *   condition_list;
   std::vector<RelAttrSqlNode> *     rel_attr_list;
+  std::vector<AggRelAttrSqlNode> *  agg_rel_attr_list;
   std::vector<std::string> *        relation_list;
   char *                            string;
   int                               number;
@@ -136,16 +144,20 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <value>               value
 %type <number>              number
 %type <comp>                comp_op
+%type <agg>                 agg_op
 // %type <exist_not>           exist_not_op
 %type <rel_attr>            rel_attr
+%type <agg_rel_attr>        agg_rel_attr
 %type <attr_infos>          attr_def_list
 %type <attr_info>           attr_def
 %type <value_list>          value_list
 %type <condition_list>      where
 %type <condition_list>      condition_list
 %type <rel_attr_list>       select_attr
+%type <agg_rel_attr_list>   select_agg_attr
 %type <relation_list>       rel_list
 %type <rel_attr_list>       attr_list
+%type <agg_rel_attr_list>   agg_attr_list
 %type <expression>          expression
 %type <expression_list>     expression_list
 %type <sql_node>            calc_stmt
@@ -448,6 +460,19 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
       free($4);
     }
+    | SELECT select_agg_attr FROM ID
+    {
+      $$ = new ParsedSqlNode(SCF_SELECT_AGG);
+      if ($2 != nullptr) {
+        $$->selection_agg.agg_attributes.swap(*$2);
+        delete $2;
+      }
+      $$->selection_agg.relations.push_back($4);
+      std::reverse($$->selection_agg.relations.begin(), $$->selection_agg.relations.end());
+
+      free($4);
+    }
+    ;
     ;
 calc_stmt:
     CALC expression_list
@@ -521,6 +546,34 @@ select_attr:
     }
     ;
 
+select_agg_attr:
+    agg_op LBRACE '*' RBRACE {
+      $$ = new std::vector<AggRelAttrSqlNode>;
+      AggRelAttrSqlNode attr;
+      attr.agg_func = $1;
+      attr.relation_name  = "";
+      attr.attribute_name = "*";
+      $$->emplace_back(attr);
+    }
+    | agg_rel_attr agg_attr_list {
+      if ($2 != nullptr) {
+        $$ = $2;
+      } else {
+        $$ = new std::vector<AggRelAttrSqlNode>;
+      }
+      $$->emplace_back(*$1);
+      delete $1;
+    }
+    ;
+
+agg_op:
+      MAX { $$ = MAX_OP; }
+    | MIN { $$ = MIN_OP; }
+    | COUNT { $$ = COUNT_OP; }
+    | AVG { $$ = AVG_OP; }
+    | SUM { $$ = SUM_OP; }
+    ;
+
 rel_attr:
     ID {
       $$ = new RelAttrSqlNode;
@@ -546,6 +599,40 @@ attr_list:
         $$ = $3;
       } else {
         $$ = new std::vector<RelAttrSqlNode>;
+      }
+
+      $$->emplace_back(*$2);
+      delete $2;
+    }
+    ;
+
+agg_rel_attr:
+    agg_op LBRACE ID RBRACE {
+      $$ = new AggRelAttrSqlNode;
+      $$->agg_func = $1;
+      $$->attribute_name = $3;
+      free($3);
+    }
+    | agg_op LBRACE ID DOT ID RBRACE {
+      $$ = new AggRelAttrSqlNode;
+      $$->agg_func = $1;
+      $$->relation_name  = $3;
+      $$->attribute_name = $5;
+      free($3);
+      free($5);
+    }
+    ;
+
+agg_attr_list:
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | COMMA agg_rel_attr agg_attr_list {
+      if ($3 != nullptr) {
+        $$ = $3;
+      } else {
+        $$ = new std::vector<AggRelAttrSqlNode>;
       }
 
       $$->emplace_back(*$2);
