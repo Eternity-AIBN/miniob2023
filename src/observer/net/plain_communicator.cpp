@@ -191,7 +191,8 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
   for (int i = 0; i < cell_num; i++) {
     const TupleCellSpec &spec = schema.cell_at(i);
     const char *alias = spec.alias();
-    if ((nullptr != alias || alias[0] != 0) && strcmp(alias, "select count(*)")) {
+    // if ((nullptr != alias || alias[0] != 0) && strcmp(alias, "select count(*)")) {
+    if (nullptr != alias || alias[0] != 0) {
       // if ((nullptr != alias || alias[0] != 0) || (nullptr != alias && strcmp(alias, "select count(*)"))) {
       select_count_star = true;
       if (0 != i) {
