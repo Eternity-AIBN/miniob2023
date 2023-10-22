@@ -84,12 +84,18 @@ RC ExecuteStage::handle_request_with_physical_operator(SQLStageEvent *sql_event)
       bool with_table_name = select_agg_stmt->tables().size() > 1;
 
       for (const Field &field : select_agg_stmt->query_fields_show()) {
-        if (nullptr != field.meta()){
-          if (with_table_name) {
-            schema.append_cell(field.table_name(), field.field_name());
-          } else {
-            schema.append_cell(field.field_name());
-          }
+        // if (nullptr != field.meta()){
+        //   if (with_table_name) {
+        //     schema.append_cell(field.table_name(), field.field_name());
+        //   } else {
+        //     schema.append_cell(field.field_name());
+        //   }
+        // }
+        if (with_table_name && nullptr != field.meta()) {
+          schema.append_cell(field.table_name(), field.field_name());
+        } else {
+          TupleCellSpec cell = TupleCellSpec("0");
+          schema.append_cell(cell);
         }
       }
     } break;

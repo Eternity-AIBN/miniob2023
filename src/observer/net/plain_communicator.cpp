@@ -186,10 +186,14 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
   const TupleSchema &schema = sql_result->tuple_schema();
   const int cell_num = schema.cell_num();
 
+  bool select_count_star = false;
+
   for (int i = 0; i < cell_num; i++) {
     const TupleCellSpec &spec = schema.cell_at(i);
     const char *alias = spec.alias();
-    if (nullptr != alias || alias[0] != 0) {
+    // if (nullptr != alias || alias[0] != 0) {
+    if (nullptr != alias && alias[0] != '0') {
+      select_count_star = true;
       if (0 != i) {
         const char *delim = " | ";
         rc = writer_->writen(delim, strlen(delim));
@@ -209,7 +213,7 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
     }
   }
 
-  if (cell_num > 0) {
+  if (cell_num > 0 && select_count_star) {
     char newline = '\n';
     rc = writer_->writen(&newline, 1);
     if (OB_FAIL(rc)) {
@@ -219,7 +223,7 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
     }
   }
 
-  bool select_count_star = false;
+  // bool select_count_star = false;
 
   rc = RC::SUCCESS;
   Tuple *tuple = nullptr;
@@ -254,7 +258,7 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
       }
     }
 
-    select_count_star = true;
+    // select_count_star = true;
 
     char newline = '\n';
     rc = writer_->writen(&newline, 1);
