@@ -68,6 +68,7 @@ Tuple *ProjectAggPhysicalOperator::current_tuple()
     //获取后续元组
     while (RC::SUCCESS == (rc = next())) {   
       tuple_.set_tuple(children_[0]->current_tuple());
+      // count_res[i] += 1;          // select count(*)?
       for(int i=0; i<num; i++){
         rc = tuple_.cell_at(i, cell);
         if(max_res[i].compare(cell) < 0){   //max_res[i] - cell
@@ -76,7 +77,7 @@ Tuple *ProjectAggPhysicalOperator::current_tuple()
         if(min_res[i].compare(cell) > 0){   //min_res[i] - cell
           min_res[i] = cell;
         }
-        count_res[i] += 1;
+        count_res[i] += 1;     // select count(字段)?
         sum_res[i] += cell.get_float();
       }
     }
