@@ -771,15 +771,21 @@ RC MysqlCommunicator::write_result(SessionEvent *event, bool &need_disconnect)
     if (cell_num == 0) {
       // maybe a dml that send nothing to client
     } else {
-      const TupleCellSpec &spec = tuple_schema.cell_at(0);
-      const char *alias = spec.alias();
-      if(strcmp(alias, "select count(*)")){
-        // send metadata : Column Definition
-        rc = send_column_definition(sql_result, need_disconnect);
-        if (rc != RC::SUCCESS) {
-          sql_result->close();
-          return rc;
-        }
+      // const TupleCellSpec &spec = tuple_schema.cell_at(0);
+      // const char *alias = spec.alias();
+      // if(alias == nullptr || strcmp(alias, "select count(*)")){
+      //   // send metadata : Column Definition
+      //   rc = send_column_definition(sql_result, need_disconnect);
+      //   if (rc != RC::SUCCESS) {
+      //     sql_result->close();
+      //     return rc;
+      //   }
+      // }
+      // send metadata : Column Definition
+      rc = send_column_definition(sql_result, need_disconnect);
+      if (rc != RC::SUCCESS) {
+        sql_result->close();
+        return rc;
       }
     }
 
