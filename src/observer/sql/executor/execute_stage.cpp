@@ -94,7 +94,7 @@ RC ExecuteStage::handle_request_with_physical_operator(SQLStageEvent *sql_event)
         if (with_table_name && nullptr != field.meta()) {
           schema.append_cell(field.table_name(), field.field_name());
         } else {
-          TupleCellSpec cell = TupleCellSpec("0");
+          TupleCellSpec cell = TupleCellSpec("select count(*)");
           schema.append_cell(cell);
         }
       }
