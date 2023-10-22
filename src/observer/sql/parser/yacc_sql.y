@@ -460,16 +460,24 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
       free($4);
     }
-    | SELECT select_agg_attr FROM ID
+    | SELECT select_agg_attr FROM ID rel_list where
     {
       $$ = new ParsedSqlNode(SCF_SELECT_AGG);
       if ($2 != nullptr) {
         $$->selection_agg.agg_attributes.swap(*$2);
         delete $2;
       }
+      if ($5 != nullptr) {
+        $$->selection_agg.relations.swap(*$5);
+        delete $5;
+      }
       $$->selection_agg.relations.push_back($4);
       std::reverse($$->selection_agg.relations.begin(), $$->selection_agg.relations.end());
 
+      if ($6 != nullptr) {
+        $$->selection_agg.conditions.swap(*$6);
+        delete $6;
+      }
       free($4);
     }
     ;
