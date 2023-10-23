@@ -48,6 +48,19 @@ RC ParseStage::handle_request(SQLStageEvent *sql_event)
   }
 
   std::unique_ptr<ParsedSqlNode> sql_node = std::move(parsed_sql_result.sql_nodes().front());
+
+  // 对于min(*)，需要返回Failure
+  if (sql_node->flag == SCF_SELECT_AGG) {
+    std::vector<AggRelAttrSqlNode> agg_attrs = sql_node->selection_agg.agg_attributes;
+    for(int i = 0; i < agg_attrs.size(); i++){
+      if (agg_attrs[i].agg_func != COUNT_OP && agg_attrs[i].attribute_name == "*"){
+        rc = RC::SQL_SYNTAX;
+        sql_result->set_return_code(rc);
+        return rc;
+      }
+    }
+  }
+
   if (sql_node->flag == SCF_ERROR) {
     // set error information to event
     rc = RC::SQL_SYNTAX;
