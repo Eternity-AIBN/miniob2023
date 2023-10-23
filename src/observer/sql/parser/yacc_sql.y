@@ -726,15 +726,17 @@ rel_list_join:
     ;
 inner_join_conditions:
     /* empty */ {
-      $$ = 0;
+      $$ = new std::vector<ConditionSqlNode>;
     }
     | ON condition inner_join_conditions{
-      $$ = new std::vector<ConditionSqlNode>;
+      // $$ = new std::vector<ConditionSqlNode>;
+      $$ = $3;
       $$->emplace_back(*$2);
       delete $2;
     }
     | AND condition inner_join_conditions{
-      $$ = new std::vector<ConditionSqlNode>;
+      // $$ = new std::vector<ConditionSqlNode>;
+      $$ = $3;
       $$->emplace_back(*$2);
       delete $2;
     }

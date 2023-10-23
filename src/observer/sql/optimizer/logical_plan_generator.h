@@ -44,6 +44,7 @@ private:
   RC create_plan(SelectAggStmt *select_agg_stmt, std::unique_ptr<LogicalOperator> &logical_operator);
   RC create_plan(SelectJoinStmt *select_join_stmt, std::unique_ptr<LogicalOperator> &logical_operator);
   RC create_plan(FilterStmt *filter_stmt, std::unique_ptr<LogicalOperator> &logical_operator);
+  RC create_plan(FilterStmt *filter_stmt, FilterStmt *filter_stmt_join, std::unique_ptr<LogicalOperator> &logical_operator);
   RC create_plan(InsertStmt *insert_stmt, std::unique_ptr<LogicalOperator> &logical_operator);
   RC create_plan(DeleteStmt *delete_stmt, std::unique_ptr<LogicalOperator> &logical_operator);
   RC create_plan(UpdateStmt *update_stmt, std::unique_ptr<LogicalOperator> &logical_operator);
