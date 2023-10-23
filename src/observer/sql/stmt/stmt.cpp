@@ -19,6 +19,8 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/update_stmt.h"
 #include "sql/stmt/select_stmt.h"
 #include "sql/stmt/select_agg_stmt.h"
+#include "sql/stmt/select_join_stmt.h"
+#include "sql/stmt/select_join_stmt.h"
 #include "sql/stmt/explain_stmt.h"
 #include "sql/stmt/create_index_stmt.h"
 #include "sql/stmt/create_table_stmt.h"
@@ -49,6 +51,9 @@ RC Stmt::create_stmt(Db *db, ParsedSqlNode &sql_node, Stmt *&stmt)
     }
     case SCF_SELECT_AGG: {
       return SelectAggStmt::create(db, sql_node.selection_agg, stmt);
+    }
+    case SCF_SELECT_JOIN: {
+      return SelectJoinStmt::create(db, sql_node.selection_join, stmt);
     }
 
     case SCF_UPDATE: {

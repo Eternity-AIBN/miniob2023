@@ -15,6 +15,11 @@
 
 using namespace std;
 
+typedef struct TableAndCondition {
+  std::vector<std::string> table_name;
+  std::vector<ConditionSqlNode> condition_name;
+} TableAndCondition;
+
 string token_name(const char *sql_string, YYLTYPE *llocp)
 {
   return string(sql_string + llocp->first_column, llocp->last_column - llocp->first_column + 1);
@@ -90,6 +95,8 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         VALUES
         FROM
         WHERE
+        INNER
+        JOIN
         AND
         SET
         ON
@@ -113,7 +120,6 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   Value *                           value;
   enum CompOp                       comp;
   enum AggOp                        agg;
-  // bool                              exist_not;
   RelAttrSqlNode *                  rel_attr;
   AggRelAttrSqlNode *               agg_rel_attr;
   std::vector<AttrInfoSqlNode> *    attr_infos;
@@ -125,6 +131,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   std::vector<RelAttrSqlNode> *     rel_attr_list;
   std::vector<AggRelAttrSqlNode> *  agg_rel_attr_list;
   std::vector<std::string> *        relation_list;
+  struct TableAndCondition *        table_and_condition;
   char *                            string;
   int                               number;
   float                             floats;
@@ -156,6 +163,8 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <rel_attr_list>       select_attr
 %type <agg_rel_attr_list>   select_agg_attr
 %type <relation_list>       rel_list
+%type <condition_list>      inner_join_conditions
+%type <table_and_condition> rel_list_join
 %type <rel_attr_list>       attr_list
 %type <agg_rel_attr_list>   agg_attr_list
 %type <expression>          expression
@@ -480,7 +489,27 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
       free($4);
     }
-    ;
+    | SELECT select_attr FROM ID INNER JOIN rel_list_join where
+    {
+      $$ = new ParsedSqlNode(SCF_SELECT_JOIN);
+      if ($2 != nullptr) {
+        $$->selection_join.attributes.swap(*$2);
+        delete $2;
+      }
+      if ($7 != nullptr) {
+        $$->selection_join.relations.swap($7->table_name);
+        $$->selection_join.join_conditions.swap($7->condition_name);
+        delete $7;
+      }
+      $$->selection_join.relations.push_back($4);
+      std::reverse($$->selection_join.relations.begin(), $$->selection_join.relations.end());
+
+      if ($8 != nullptr) {
+        $$->selection_join.conditions.swap(*$8);
+        delete $8;
+      }
+      free($4);
+    }
     ;
 calc_stmt:
     CALC expression_list
@@ -661,6 +690,53 @@ rel_list:
 
       $$->push_back($2);
       free($2);
+    }
+    ;
+rel_list_join:
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | ID inner_join_conditions rel_list_join {
+      if ($3 != nullptr) {
+        $$ = $3;
+      } else {
+        // $$ = new std::vector<std::string>;
+        $$ = new TableAndCondition;
+      }
+
+      // $$->condition_name.push_back($2);
+      $$->condition_name.insert($$->condition_name.end(),$2->begin(),$2->end());
+      $$->table_name.push_back($1);
+      free($1);
+    }
+    | INNER JOIN ID inner_join_conditions rel_list_join {
+      if ($5 != nullptr) {
+        $$ = $5;
+      } else {
+        // $$ = new std::vector<std::string>;
+        $$ = new TableAndCondition;
+      }
+
+      // $$->condition_name.push_back($4);
+      $$->condition_name.insert($$->condition_name.end(),$4->begin(),$4->end());
+      $$->table_name.push_back($3);
+      free($3);
+    }
+    ;
+inner_join_conditions:
+    /* empty */ {
+      $$ = 0;
+    }
+    | ON condition inner_join_conditions{
+      $$ = new std::vector<ConditionSqlNode>;
+      $$->emplace_back(*$2);
+      delete $2;
+    }
+    | AND condition inner_join_conditions{
+      $$ = new std::vector<ConditionSqlNode>;
+      $$->emplace_back(*$2);
+      delete $2;
     }
     ;
 where:

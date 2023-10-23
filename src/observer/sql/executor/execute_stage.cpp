@@ -25,6 +25,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/stmt.h"
 #include "sql/stmt/select_stmt.h"
 #include "sql/stmt/select_agg_stmt.h"
+#include "sql/stmt/select_join_stmt.h"
 #include "storage/default/default_handler.h"
 #include "sql/executor/command_executor.h"
 #include "sql/operator/calc_physical_operator.h"
@@ -83,13 +84,6 @@ RC ExecuteStage::handle_request_with_physical_operator(SQLStageEvent *sql_event)
       SelectAggStmt *select_agg_stmt = static_cast<SelectAggStmt *>(stmt);
       bool with_table_name = select_agg_stmt->tables().size() > 1;
 
-      
-      // const FieldMeta *field_meta = table_meta.field(table_meta.sys_field_num());
-      // std::string agg_name =  "count(*)"; 
-      // const char* agg_name_char = agg_name.c_str();
-      // field_meta_show = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
-      // field_metas_show.push_back(Field(table, &field_meta_show));
-
       for (int i = 0; i < static_cast<int>(select_agg_stmt->aggop().size()); i++) {
         std::string aggop_name;
         switch (select_agg_stmt->aggop()[i])
@@ -123,6 +117,19 @@ RC ExecuteStage::handle_request_with_physical_operator(SQLStageEvent *sql_event)
           schema.append_cell(select_agg_stmt->query_fields()[i].table_name(), select_agg_stmt->query_fields()[i].field_name());
         } else {
           schema.append_cell(agg_name_char);
+        }
+      }
+    } break;
+
+    case StmtType::SELECT_JOIN: {
+      SelectJoinStmt *select_join_stmt = static_cast<SelectJoinStmt *>(stmt);
+      bool with_table_name = select_join_stmt->tables().size() > 1;
+
+      for (const Field &field : select_join_stmt->query_fields()) {
+        if (with_table_name) {
+          schema.append_cell(field.table_name(), field.field_name());
+        } else {
+          schema.append_cell(field.field_name());
         }
       }
     } break;

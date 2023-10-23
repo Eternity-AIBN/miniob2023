@@ -123,6 +123,14 @@ struct SelectAggSqlNode
   std::vector<ConditionSqlNode>   conditions;    ///< 查询条件，使用AND串联起来多个条件
 };
 
+struct SelectJoinSqlNode
+{
+  std::vector<RelAttrSqlNode>     attributes;    ///< attributes in select clause
+  std::vector<std::string>        relations;     ///< 查询的表
+  std::vector<ConditionSqlNode>   conditions;    ///< 查询条件，使用AND串联起来多个条件
+  std::vector<ConditionSqlNode>   join_conditions;
+};
+
 /**
  * @brief 算术表达式计算的语法树
  * @ingroup SQLParser
@@ -292,6 +300,7 @@ enum SqlCommandFlag
   SCF_CALC,
   SCF_SELECT,
   SCF_SELECT_AGG,
+  SCF_SELECT_JOIN,
   SCF_INSERT,
   SCF_UPDATE,
   SCF_DELETE,
@@ -324,6 +333,7 @@ public:
   CalcSqlNode               calc;
   SelectSqlNode             selection;
   SelectAggSqlNode          selection_agg;
+  SelectJoinSqlNode         selection_join;
   InsertSqlNode             insertion;
   DeleteSqlNode             deletion;
   UpdateSqlNode             update;
