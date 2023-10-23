@@ -25,6 +25,7 @@ See the Mulan PSL v2 for more details. */
 #include "event/session_event.h"
 #include "session/session.h"
 #include "sql/stmt/stmt.h"
+#include "sql/stmt/select_agg_stmt.h"
 
 using namespace common;
 
@@ -51,6 +52,18 @@ RC ResolveStage::handle_request(SQLStageEvent *sql_event)
     sql_result->set_return_code(rc);
     return rc;
   }
+  // if(stmt->type() == StmtType::SELECT_AGG){
+  //   SelectAggStmt *select_agg_stmt = static_cast<SelectAggStmt *>(stmt);
+  //   bool with_table_name = select_agg_stmt->tables().size() > 1;
+  //   for (const Field &field : select_agg_stmt->query_fields()) {
+  //     if (with_table_name && nullptr != field.meta()) {
+  //       printf("field.field_name(): %s\n", field.field_name());
+  //     } else {
+  //       printf("with_table_name = 0\n");
+  //       printf("field.field_name(): %s\n", field.field_name());
+  //     }
+  //   }
+  // }
 
   sql_event->set_stmt(stmt);
 

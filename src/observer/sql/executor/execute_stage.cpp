@@ -83,18 +83,46 @@ RC ExecuteStage::handle_request_with_physical_operator(SQLStageEvent *sql_event)
       SelectAggStmt *select_agg_stmt = static_cast<SelectAggStmt *>(stmt);
       bool with_table_name = select_agg_stmt->tables().size() > 1;
 
-      for (const Field &field : select_agg_stmt->query_fields_show()) {
-        // if (nullptr != field.meta()){
-        //   if (with_table_name) {
-        //     schema.append_cell(field.table_name(), field.field_name());
-        //   } else {
-        //     schema.append_cell(field.field_name());
-        //   }
-        // }
-        if (with_table_name && nullptr != field.meta()) {
-          schema.append_cell(field.table_name(), field.field_name());
+      
+      // const FieldMeta *field_meta = table_meta.field(table_meta.sys_field_num());
+      // std::string agg_name =  "count(*)"; 
+      // const char* agg_name_char = agg_name.c_str();
+      // field_meta_show = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
+      // field_metas_show.push_back(Field(table, &field_meta_show));
+
+      for (int i = 0; i < static_cast<int>(select_agg_stmt->aggop().size()); i++) {
+        std::string aggop_name;
+        switch (select_agg_stmt->aggop()[i])
+        {
+        case MAX_OP:
+          aggop_name = "max";
+          break;
+        case MIN_OP:
+          aggop_name = "min";
+          break;
+        case COUNT_OP:
+          aggop_name = "count";
+          break;
+        case AVG_OP:
+          aggop_name = "avg";
+          break;
+        case SUM_OP:
+          aggop_name = "sum";
+          break;
+        default:
+          break;
+        }
+        std::string agg_name;
+        if(select_agg_stmt->select_count_star() == true){
+          agg_name = "count(*)";
+        }else{
+          agg_name = aggop_name + "(" + select_agg_stmt->query_fields()[i].field_name() + ")"; 
+        }
+        const char* agg_name_char = agg_name.c_str();
+        if (with_table_name) {
+          schema.append_cell(select_agg_stmt->query_fields()[i].table_name(), select_agg_stmt->query_fields()[i].field_name());
         } else {
-          schema.append_cell(field.field_name());
+          schema.append_cell(agg_name_char);
         }
       }
     } break;

@@ -13,22 +13,12 @@ SelectAggStmt::~SelectAggStmt()
   }
 }
 
-static void wildcard_fields(Table *table, std::vector<Field> &field_metas, std::vector<Field> &field_metas_show, FieldMeta &field_meta_show)
+static void wildcard_fields(Table *table, std::vector<Field> &field_metas)
 {
   const TableMeta &table_meta = table->table_meta();
   const int field_num = table_meta.field_num();
-  // for (int i = table_meta.sys_field_num(); i < field_num; i++) {
-  //   field_metas.push_back(Field(table, table_meta.field(i)));
-  // }
   // select * 才需要将*展开，select count(*) 结果只会有一列
   field_metas.push_back(Field(table, table_meta.field(table_meta.sys_field_num())));
-  // field_metas_show.push_back(Field(table, nullptr));
-
-  const FieldMeta *field_meta = table_meta.field(table_meta.sys_field_num());
-  std::string agg_name =  "count(*)"; 
-  const char* agg_name_char = agg_name.c_str();
-  field_meta_show = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
-  field_metas_show.push_back(Field(table, &field_meta_show));
 }
 
 RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt)
@@ -61,8 +51,7 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
 
   // collect query fields in `select` statement
   std::vector<Field> query_fields;
-  std::vector<Field> query_fields_show;
-  FieldMeta tmp;
+  bool flag = false;
   for (int i = static_cast<int>(select_sql.agg_attributes.size()) - 1; i >= 0; i--) {
     const AggRelAttrSqlNode &relation_attr = select_sql.agg_attributes[i];
 
@@ -71,17 +60,8 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
     if (common::is_blank(relation_attr.relation_name.c_str()) &&
         0 == strcmp(relation_attr.attribute_name.c_str(), "*")) {
       for (Table *table : tables) {
-        
-        wildcard_fields(table, query_fields, query_fields_show, tmp);
-        // const TableMeta &table_meta = table->table_meta();
-        // const int field_num = table_meta.field_num();
-        // query_fields.push_back(Field(table, table_meta.field(table_meta.sys_field_num())));
-
-        // const FieldMeta *field_meta = table_meta.field(table_meta.sys_field_num());
-        // std::string agg_name =  "count(*)"; 
-        // const char* agg_name_char = agg_name.c_str();
-        // FieldMeta field_meta_show = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
-        // query_fields_show.push_back(Field(table, &field_meta_show));
+        flag = true;
+        wildcard_fields(table, query_fields);
       }
 
     } else if (!common::is_blank(relation_attr.relation_name.c_str())) {
@@ -94,7 +74,8 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
           return RC::SCHEMA_FIELD_MISSING;
         }
         for (Table *table : tables) {
-          wildcard_fields(table, query_fields, query_fields_show, tmp);
+          flag = true;
+          wildcard_fields(table, query_fields);
         }
       } else {
         auto iter = table_map.find(table_name);
@@ -105,7 +86,8 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
 
         Table *table = iter->second;
         if (0 == strcmp(field_name, "*")) {
-          wildcard_fields(table, query_fields, query_fields_show, tmp);
+          flag = true;
+          wildcard_fields(table, query_fields);
         } else {
           const FieldMeta *field_meta = table->table_meta().field(field_name);
           if (nullptr == field_meta) {
@@ -114,32 +96,6 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
           }
 
           query_fields.push_back(Field(table, field_meta));
-
-          std::string aggop_name;
-          switch (select_sql.agg_attributes[i].agg_func)
-          {
-          case MAX_OP:
-            aggop_name = "max";
-            break;
-          case MIN_OP:
-            aggop_name = "min";
-            break;
-          case COUNT_OP:
-            aggop_name = "count";
-            break;
-          case AVG_OP:
-            aggop_name = "avg";
-            break;
-          case SUM_OP:
-            aggop_name = "sum";
-            break;
-          default:
-            break;
-          }
-          std::string agg_name = aggop_name + "(" + field_meta->name() + ")"; 
-          const char* agg_name_char = agg_name.c_str();
-          tmp = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
-          query_fields_show.push_back(Field(table, &tmp));
         }
       }
     } else {
@@ -156,31 +112,6 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
       }
 
       query_fields.push_back(Field(table, field_meta));
-      std::string aggop_name;
-      switch (select_sql.agg_attributes[i].agg_func)
-      {
-      case MAX_OP:
-        aggop_name = "max";
-        break;
-      case MIN_OP:
-        aggop_name = "min";
-        break;
-      case COUNT_OP:
-        aggop_name = "count";
-        break;
-      case AVG_OP:
-        aggop_name = "avg";
-        break;
-      case SUM_OP:
-        aggop_name = "sum";
-        break;
-      default:
-        break;
-      }
-      std::string agg_name = aggop_name + "(" + field_meta->name() + ")"; 
-      const char* agg_name_char = agg_name.c_str();
-      tmp = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
-      query_fields_show.push_back(Field(table, &tmp));
     }
   }
 
@@ -209,9 +140,9 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
   // TODO add expression copy
   select_agg_stmt->tables_.swap(tables);
   select_agg_stmt->query_fields_.swap(query_fields);
-  select_agg_stmt->query_fields_show_.swap(query_fields_show);
   select_agg_stmt->filter_stmt_ = filter_stmt;
   select_agg_stmt->aggop_ = aggop;
+  select_agg_stmt->select_count_star_ = flag;
   stmt = select_agg_stmt;
   return RC::SUCCESS;
 }

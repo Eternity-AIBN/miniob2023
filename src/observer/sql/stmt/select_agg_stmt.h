@@ -39,10 +39,10 @@ public:
   {
     return query_fields_;
   }
-  const std::vector<Field> &query_fields_show() const
-  {
-    return query_fields_show_;
-  }
+  // const std::vector<Field> &query_fields_show() const
+  // {
+  //   return query_fields_show_;
+  // }
   FilterStmt *filter_stmt() const
   {
     return filter_stmt_;
@@ -51,11 +51,16 @@ public:
   {
     return aggop_;
   }
+  const bool &select_count_star() const
+  {
+    return select_count_star_;
+  }
 
 private:
   std::vector<Field> query_fields_;
-  std::vector<Field> query_fields_show_;
+  // std::vector<Field> query_fields_show_;
   std::vector<Table *> tables_;
   FilterStmt *filter_stmt_ = nullptr;
   std::vector<AggOp> aggop_;
+  bool select_count_star_;
 };
