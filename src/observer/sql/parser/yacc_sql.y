@@ -555,10 +555,10 @@ select_attr:
     ;
 
 select_agg_attr:
-    agg_op LBRACE '*' RBRACE {
+    COUNT LBRACE '*' RBRACE {
       $$ = new std::vector<AggRelAttrSqlNode>;
       AggRelAttrSqlNode attr;
-      attr.agg_func = $1;
+      attr.agg_func = COUNT_OP;
       attr.relation_name  = "";
       attr.attribute_name = "*";
       $$->emplace_back(attr);
