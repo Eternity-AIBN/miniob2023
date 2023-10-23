@@ -555,15 +555,7 @@ select_attr:
     ;
 
 select_agg_attr:
-    agg_op LBRACE '*' RBRACE {
-      $$ = new std::vector<AggRelAttrSqlNode>;
-      AggRelAttrSqlNode attr;
-      attr.agg_func = $1;
-      attr.relation_name  = "";
-      attr.attribute_name = "*";
-      $$->emplace_back(attr);
-    }
-    | agg_rel_attr agg_attr_list {
+    agg_rel_attr agg_attr_list {
       if ($2 != nullptr) {
         $$ = $2;
       } else {
@@ -615,7 +607,14 @@ attr_list:
     ;
 
 agg_rel_attr:
-    agg_op LBRACE ID RBRACE {
+    agg_op LBRACE '*' RBRACE {
+      $$ = new AggRelAttrSqlNode;
+      AggRelAttrSqlNode attr;
+      $$->agg_func = $1;
+      $$->relation_name  = "";
+      $$->attribute_name = "*";
+    }
+    | agg_op LBRACE ID RBRACE {
       $$ = new AggRelAttrSqlNode;
       $$->agg_func = $1;
       $$->attribute_name = $3;

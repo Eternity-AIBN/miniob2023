@@ -113,7 +113,7 @@ RC ExecuteStage::handle_request_with_physical_operator(SQLStageEvent *sql_event)
           break;
         }
         std::string agg_name;
-        if(select_agg_stmt->select_count_star() == true){
+        if(select_agg_stmt->select_count_star()[i] == true){
           agg_name = "count(*)";
         }else{
           agg_name = aggop_name + "(" + select_agg_stmt->query_fields()[i].field_name() + ")"; 

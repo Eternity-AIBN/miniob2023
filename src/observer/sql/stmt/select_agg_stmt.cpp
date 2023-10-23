@@ -51,7 +51,7 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
 
   // collect query fields in `select` statement
   std::vector<Field> query_fields;
-  bool flag = false;
+  std::vector<bool> flag;
   for (int i = static_cast<int>(select_sql.agg_attributes.size()) - 1; i >= 0; i--) {
     const AggRelAttrSqlNode &relation_attr = select_sql.agg_attributes[i];
 
@@ -60,7 +60,8 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
     if (common::is_blank(relation_attr.relation_name.c_str()) &&
         0 == strcmp(relation_attr.attribute_name.c_str(), "*")) {
       for (Table *table : tables) {
-        flag = true;
+        flag.push_back(true);
+
         wildcard_fields(table, query_fields);
       }
 
@@ -74,7 +75,7 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
           return RC::SCHEMA_FIELD_MISSING;
         }
         for (Table *table : tables) {
-          flag = true;
+          flag.push_back(true);
           wildcard_fields(table, query_fields);
         }
       } else {
@@ -86,7 +87,7 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
 
         Table *table = iter->second;
         if (0 == strcmp(field_name, "*")) {
-          flag = true;
+          flag.push_back(true);
           wildcard_fields(table, query_fields);
         } else {
           const FieldMeta *field_meta = table->table_meta().field(field_name);
@@ -94,7 +95,8 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
             LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), field_name);
             return RC::SCHEMA_FIELD_MISSING;
           }
-
+          
+          flag.push_back(false);
           query_fields.push_back(Field(table, field_meta));
         }
       }
@@ -111,6 +113,7 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
         return RC::SCHEMA_FIELD_MISSING;
       }
 
+      flag.push_back(false);
       query_fields.push_back(Field(table, field_meta));
     }
   }

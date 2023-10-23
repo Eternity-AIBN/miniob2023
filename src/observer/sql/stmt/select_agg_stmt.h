@@ -51,7 +51,7 @@ public:
   {
     return aggop_;
   }
-  const bool &select_count_star() const
+  const std::vector<bool> &select_count_star() const
   {
     return select_count_star_;
   }
@@ -62,5 +62,5 @@ private:
   std::vector<Table *> tables_;
   FilterStmt *filter_stmt_ = nullptr;
   std::vector<AggOp> aggop_;
-  bool select_count_star_;
+  std::vector<bool> select_count_star_;
 };
