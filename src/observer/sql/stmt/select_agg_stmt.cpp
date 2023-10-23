@@ -13,7 +13,7 @@ SelectAggStmt::~SelectAggStmt()
   }
 }
 
-static void wildcard_fields(Table *table, std::vector<Field> &field_metas, std::vector<Field> &field_metas_show)
+static void wildcard_fields(Table *table, std::vector<Field> &field_metas, std::vector<Field> &field_metas_show, FieldMeta &field_meta_show)
 {
   const TableMeta &table_meta = table->table_meta();
   const int field_num = table_meta.field_num();
@@ -27,7 +27,7 @@ static void wildcard_fields(Table *table, std::vector<Field> &field_metas, std::
   const FieldMeta *field_meta = table_meta.field(table_meta.sys_field_num());
   std::string agg_name =  "count(*)"; 
   const char* agg_name_char = agg_name.c_str();
-  FieldMeta field_meta_show = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
+  field_meta_show = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
   field_metas_show.push_back(Field(table, &field_meta_show));
 }
 
@@ -62,6 +62,7 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
   // collect query fields in `select` statement
   std::vector<Field> query_fields;
   std::vector<Field> query_fields_show;
+  FieldMeta tmp;
   for (int i = static_cast<int>(select_sql.agg_attributes.size()) - 1; i >= 0; i--) {
     const AggRelAttrSqlNode &relation_attr = select_sql.agg_attributes[i];
 
@@ -70,7 +71,17 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
     if (common::is_blank(relation_attr.relation_name.c_str()) &&
         0 == strcmp(relation_attr.attribute_name.c_str(), "*")) {
       for (Table *table : tables) {
-        wildcard_fields(table, query_fields, query_fields_show);
+        
+        wildcard_fields(table, query_fields, query_fields_show, tmp);
+        // const TableMeta &table_meta = table->table_meta();
+        // const int field_num = table_meta.field_num();
+        // query_fields.push_back(Field(table, table_meta.field(table_meta.sys_field_num())));
+
+        // const FieldMeta *field_meta = table_meta.field(table_meta.sys_field_num());
+        // std::string agg_name =  "count(*)"; 
+        // const char* agg_name_char = agg_name.c_str();
+        // FieldMeta field_meta_show = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
+        // query_fields_show.push_back(Field(table, &field_meta_show));
       }
 
     } else if (!common::is_blank(relation_attr.relation_name.c_str())) {
@@ -83,7 +94,7 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
           return RC::SCHEMA_FIELD_MISSING;
         }
         for (Table *table : tables) {
-          wildcard_fields(table, query_fields, query_fields_show);
+          wildcard_fields(table, query_fields, query_fields_show, tmp);
         }
       } else {
         auto iter = table_map.find(table_name);
@@ -94,7 +105,7 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
 
         Table *table = iter->second;
         if (0 == strcmp(field_name, "*")) {
-          wildcard_fields(table, query_fields, query_fields_show);
+          wildcard_fields(table, query_fields, query_fields_show, tmp);
         } else {
           const FieldMeta *field_meta = table->table_meta().field(field_name);
           if (nullptr == field_meta) {
@@ -125,14 +136,10 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
           default:
             break;
           }
-          // if(aggop_name == "count"){
-          //   query_fields_show.push_back(Field(table, nullptr));
-          // }else{
-            std::string agg_name = aggop_name + "(" + field_meta->name() + ")"; 
-            const char* agg_name_char = agg_name.c_str();
-            FieldMeta field_meta_show = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
-            query_fields_show.push_back(Field(table, &field_meta_show));
-          // }
+          std::string agg_name = aggop_name + "(" + field_meta->name() + ")"; 
+          const char* agg_name_char = agg_name.c_str();
+          tmp = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
+          query_fields_show.push_back(Field(table, &tmp));
         }
       }
     } else {
@@ -170,18 +177,14 @@ RC SelectAggStmt::create(Db *db, const SelectAggSqlNode &select_sql, Stmt *&stmt
       default:
         break;
       }
-      // if(aggop_name == "count"){
-      //   query_fields_show.push_back(Field(table, nullptr));
-      // }else{
-        std::string agg_name = aggop_name + "(" + field_meta->name() + ")"; 
-        const char* agg_name_char = agg_name.c_str();
-        FieldMeta field_meta_show = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
-        query_fields_show.push_back(Field(table, &field_meta_show));
-      // }
+      std::string agg_name = aggop_name + "(" + field_meta->name() + ")"; 
+      const char* agg_name_char = agg_name.c_str();
+      tmp = FieldMeta(agg_name_char, field_meta->type(), field_meta->offset(), field_meta->len(), field_meta->visible());
+      query_fields_show.push_back(Field(table, &tmp));
     }
   }
 
-  LOG_INFO("got %d tables in from stmt and %d fields in query stmt", tables.size(), query_fields.size());
+  // LOG_INFO("got %d tables in from stmt and %d fields in query stmt", tables.size(), query_fields.size());
 
   Table *default_table = nullptr;
   if (tables.size() == 1) {
