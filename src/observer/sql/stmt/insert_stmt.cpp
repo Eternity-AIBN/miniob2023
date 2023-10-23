@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "storage/db/db.h"
 #include "storage/table/table.h"
+#include "util/typecast.h"
 
 InsertStmt::InsertStmt(Table *table, const Value *values, int value_amount)
     : table_(table), values_(values), value_amount_(value_amount)
@@ -67,6 +68,32 @@ RC InsertStmt::create(Db *db, InsertSqlNode &inserts, Stmt *&stmt)
         values[i].set_date(date);
         // printf("22222: %d\n", values[i].get_int());             // 20200121
         // printf("33333: %s\n", values[i].get_string().c_str());  // 20200121
+      }
+      else if(!type_cast_not_support(value_type, field_type)){
+        void *tmp_data = nullptr;
+        tmp_data = cast_to[value_type][field_type](values[i].get_data());
+        if (nullptr == tmp_data) {
+          LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d",
+            table_name, field_meta->name(), field_type, value_type);
+          return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+        }
+        
+        int copy_len = field_meta->len();
+        if (field_type == CHARS) {
+          const int data_len = strlen((const char *)tmp_data);
+          if (copy_len > data_len) {
+            copy_len = data_len + 1;
+          }
+        }
+        values[i].set_type(field_type);
+        values[i].set_data((char *)tmp_data, copy_len);
+
+
+        // need to release memory
+        // if (field_meta->type() != values[i].attr_type()) {
+        //   assert(nullptr != tmp_data);
+        //   free(tmp_data);
+        // }
       }
       else{
         LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d",

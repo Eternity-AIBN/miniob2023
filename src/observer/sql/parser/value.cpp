@@ -163,6 +163,21 @@ const char *Value::data() const
   }
 }
 
+char *Value::get_data()
+{
+  switch (attr_type_) {
+    case CHARS: {
+      return (char*)str_value_.c_str();
+    } break;
+    // case DATES: {
+    //   return str_value_.c_str();
+    // } break;
+    default: {
+      return (char *)&num_value_;
+    } break;
+  }
+}
+
 std::string Value::to_string() const
 {
   std::stringstream os;

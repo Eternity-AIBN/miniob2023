@@ -79,6 +79,7 @@ public:
   int like(const Value &other) const;
 
   const char *data() const;
+  char *get_data();
   int length() const
   {
     return length_;
