@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "common/lang/comparator.h"
 #include "common/lang/string.h"
+#include "util/typecast.h"
 
 const char *ATTR_TYPE_NAME[] = {"undefined", "chars", "ints", "floats", "dates", "booleans"};
 
@@ -240,6 +241,36 @@ int Value::compare(const Value &other) const
   } else if (this->attr_type_ == FLOATS && other.attr_type_ == INTS) {
     float other_data = other.num_value_.int_value_;
     return common::compare_float((void *)&this->num_value_.float_value_, (void *)&other_data);
+  } else if (!type_cast_not_support(this->attr_type_, other.attr_type_)){
+    if (this->attr_type_ == CHARS){
+      void *tmp_data = nullptr;
+      tmp_data = cast_to[CHARS][other.attr_type_]((char*)this->str_value_.c_str());
+      if (nullptr == tmp_data) {
+        return -1;
+      }
+      
+      Value *new_value = new Value(other.attr_type_, (char *)tmp_data, 4);
+
+      if (other.attr_type_ == INTS){
+        return common::compare_int((void *)&new_value->num_value_.int_value_, (void *)&other.num_value_.int_value_);
+      } else if (other.attr_type_ == FLOATS){
+        return common::compare_float((void *)&new_value->num_value_.float_value_, (void *)&other.num_value_.float_value_);
+      }
+    } else if (other.attr_type_ == CHARS){
+      void *tmp_data = nullptr;
+      tmp_data = cast_to[CHARS][this->attr_type_]((char*)other.str_value_.c_str());
+      if (nullptr == tmp_data) {
+        return -1;
+      }
+      
+      Value *new_value = new Value(this->attr_type_, (char *)tmp_data, 4);
+
+      if (this->attr_type_ == INTS){
+        return common::compare_int((void *)&this->num_value_.int_value_, (void *)&new_value->num_value_.int_value_);
+      } else if (this->attr_type_ == FLOATS){
+        return common::compare_float((void *)&this->num_value_.float_value_, (void *)&new_value->num_value_.float_value_);
+      }
+    }
   }
   LOG_WARN("not supported");
   return -1;  // TODO return rc?
