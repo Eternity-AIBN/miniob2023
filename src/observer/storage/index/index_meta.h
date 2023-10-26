@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <string>
 #include "common/rc.h"
+#include <vector>
 
 class TableMeta;
 class FieldMeta;
