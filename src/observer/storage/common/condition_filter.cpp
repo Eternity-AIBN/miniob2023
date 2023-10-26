@@ -60,7 +60,8 @@ RC DefaultConditionFilter::init(const ConDesc &left, const ConDesc &right, AttrT
 
 RC DefaultConditionFilter::init(Table &table, const ConditionSqlNode &condition)
 {
-  const TableMeta &table_meta = table.table_meta();
+  // const TableMeta &table_meta = table.table_meta();
+  TableMeta &table_meta = table.table_meta();
   ConDesc left;
   ConDesc right;
 

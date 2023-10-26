@@ -318,14 +318,19 @@ TEST(test_bplus_tree, test_leaf_index_node_handle)
   index_file_header.root_page = BP_INVALID_PAGE_NUM;
   index_file_header.internal_max_size = 5;
   index_file_header.leaf_max_size = 5;
-  index_file_header.attr_length = 4;
+  index_file_header.total_attr_length = 4;
+  std::vector<int32_t> *tmp = new std::vector<int32_t>(1, 4);
+  index_file_header.attr_length = *tmp;
   index_file_header.key_length = 4 + sizeof(RID);
-  index_file_header.attr_type = INTS;
+  // index_file_header.attr_type = INTS;
+  std::vector<AttrType> *tmp2 = new std::vector<AttrType>(1, INTS);
+  index_file_header.attr_type = *tmp2;
 
   Frame frame;
 
   KeyComparator key_comparator;
-  key_comparator.init(INTS, 4);
+  // key_comparator.init(INTS, 4);
+  key_comparator.init(*tmp2, *tmp);
 
   LeafIndexNodeHandler leaf_node(index_file_header, &frame);
   leaf_node.init_empty();
@@ -375,14 +380,18 @@ TEST(test_bplus_tree, test_internal_index_node_handle)
   index_file_header.root_page = BP_INVALID_PAGE_NUM;
   index_file_header.internal_max_size = 5;
   index_file_header.leaf_max_size = 5;
-  index_file_header.attr_length = 4;
+  index_file_header.total_attr_length = 4;
+  std::vector<int32_t> *tmp = new std::vector<int32_t>(1, 4);
+  index_file_header.attr_length = *tmp;
   index_file_header.key_length = 4 + sizeof(RID);
-  index_file_header.attr_type = INTS;
+  // index_file_header.attr_type = INTS;
+  std::vector<AttrType> *tmp2 = new std::vector<AttrType>(1, INTS);
+  index_file_header.attr_type = *tmp2;
 
   Frame frame;
 
   KeyComparator key_comparator;
-  key_comparator.init(INTS, 4);
+  key_comparator.init(*tmp2, *tmp);
 
   InternalIndexNodeHandler internal_node(index_file_header, &frame);
   internal_node.init_empty();
@@ -472,7 +481,11 @@ TEST(test_bplus_tree, test_chars)
   const char *index_name = "chars.btree";
   ::remove(index_name);
   handler = new BplusTreeHandler();
-  handler->create(index_name, CHARS, 8, ORDER, ORDER);
+  // handler->create(index_name, CHARS, 8, ORDER, ORDER);
+  FieldMeta *filedmeta = new FieldMeta("test", CHARS, 0, 8, 0);
+  std::vector<FieldMeta *> tmp;
+  tmp.push_back(filedmeta);
+  handler->create(index_name, tmp, ORDER, ORDER);
 
   char keys[][9] = {
     "abcdefg",
@@ -515,7 +528,11 @@ TEST(test_bplus_tree, test_scanner)
   const char *index_name = "scanner.btree";
   ::remove(index_name);
   handler = new BplusTreeHandler();
-  handler->create(index_name, INTS, sizeof(int), ORDER, ORDER);
+  // handler->create(index_name, INTS, sizeof(int), ORDER, ORDER);
+  FieldMeta *filedmeta = new FieldMeta("test", INTS, 0, sizeof(int), 0);
+  std::vector<FieldMeta *> tmp;
+  tmp.push_back(filedmeta);
+  handler->create(index_name, tmp, ORDER, ORDER);
 
   int count = 0;
   RC rc = RC::SUCCESS;
@@ -724,7 +741,11 @@ TEST(test_bplus_tree, test_bplus_tree_insert)
 
   ::remove(index_name);
   handler = new BplusTreeHandler();
-  handler->create(index_name, INTS, sizeof(int), ORDER, ORDER);
+  // handler->create(index_name, INTS, sizeof(int), ORDER, ORDER);
+  FieldMeta *filedmeta = new FieldMeta("test", INTS, 0, sizeof(int), 0);
+  std::vector<FieldMeta *> tmp;
+  tmp.push_back(filedmeta);
+  handler->create(index_name, tmp, ORDER, ORDER);
 
   test_insert();
 

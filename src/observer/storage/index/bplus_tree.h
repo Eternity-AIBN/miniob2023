@@ -98,30 +98,52 @@ private:
 class KeyComparator 
 {
 public:
-  void init(AttrType type, int length)
+  void init(std::vector<AttrType> type, std::vector<int> length)
   {
-    attr_comparator_.init(type, length);
+    // attr_comparator_.init(type, length);
+    for (int i=0; i<type.size(); i++){
+      AttrComparator *tmp = new AttrComparator;
+      tmp->init(type[i], length[i]);
+      attr_comparator_.push_back(tmp);
+    }
   }
 
-  const AttrComparator &attr_comparator() const
+  std::vector<AttrComparator *> &attr_comparator()
   {
     return attr_comparator_;
   }
 
+  // int operator()(const char *v1, const char *v2) const
+  // {
+  //   int result = attr_comparator_(v1, v2);
+  //   if (result != 0) {
+  //     return result;
+  //   }
+
+  //   const RID *rid1 = (const RID *)(v1 + attr_comparator_.attr_length());
+  //   const RID *rid2 = (const RID *)(v2 + attr_comparator_.attr_length());
+  //   return RID::compare(rid1, rid2);
+  // }
   int operator()(const char *v1, const char *v2) const
   {
-    int result = attr_comparator_(v1, v2);
-    if (result != 0) {
-      return result;
+    int result = 0;
+    int pos = 0;
+    for(int i = 0; i < attr_comparator_.size(); i++){
+      result = (*attr_comparator_[i])(v1 + pos, v2 + pos);
+      if (result != 0) {
+        return result;
+      }
+      pos += attr_comparator_[i]->attr_length();
     }
 
-    const RID *rid1 = (const RID *)(v1 + attr_comparator_.attr_length());
-    const RID *rid2 = (const RID *)(v2 + attr_comparator_.attr_length());
+    const RID *rid1 = (const RID *)(v1 + pos);
+    const RID *rid2 = (const RID *)(v2 + pos);
     return RID::compare(rid1, rid2);
   }
 
 private:
-  AttrComparator attr_comparator_;
+  // AttrComparator attr_comparator_;
+  std::vector<AttrComparator *> attr_comparator_;
 };
 
 /**
@@ -183,28 +205,45 @@ private:
 class KeyPrinter 
 {
 public:
-  void init(AttrType type, int length)
+  void init(std::vector<AttrType> type, std::vector<int> length)
   {
-    attr_printer_.init(type, length);
+    // attr_printer_.init(type, length);
+    for (int i=0; i<type.size(); i++){
+      AttrPrinter *tmp = new AttrPrinter;
+      tmp->init(type[i], length[i]);
+      attr_printer_.push_back(tmp);
+    }
   }
 
-  const AttrPrinter &attr_printer() const
+  std::vector<AttrPrinter *> &attr_printer()
   {
     return attr_printer_;
   }
 
   std::string operator()(const char *v) const
   {
-    std::stringstream ss;
-    ss << "{key:" << attr_printer_(v) << ",";
+    // std::stringstream ss;
+    // ss << "{key:" << attr_printer_(v) << ",";
 
-    const RID *rid = (const RID *)(v + attr_printer_.attr_length());
+    // const RID *rid = (const RID *)(v + attr_printer_.attr_length());
+    // ss << "rid:{" << rid->to_string() << "}}";
+    // return ss.str();
+
+    std::stringstream ss;
+    ss << "{key:" << (*attr_printer_[0])(v) << ",";
+    int pos = attr_printer_[0]->attr_length();
+    for(int i = 1; i < attr_printer_.size(); i++){
+      ss << (*attr_printer_[0])(v + pos) << ",";
+      pos += attr_printer_[i]->attr_length();
+    }
+    const RID *rid = (const RID *)(v + pos);
     ss << "rid:{" << rid->to_string() << "}}";
     return ss.str();
   }
 
 private:
-  AttrPrinter attr_printer_;
+  // AttrPrinter attr_printer_;
+  std::vector<AttrPrinter *> attr_printer_;
 };
 
 /**
@@ -223,18 +262,23 @@ struct IndexFileHeader
   PageNum root_page;          ///< 根节点在磁盘中的页号
   int32_t internal_max_size;  ///< 内部节点最大的键值对数
   int32_t leaf_max_size;      ///< 叶子节点最大的键值对数
-  int32_t attr_length;        ///< 键值的长度
+  int32_t total_attr_length;        ///< 键值的长度
+  std::vector<int32_t> attr_length; 
   int32_t key_length;         ///< attr length + sizeof(RID)
-  AttrType attr_type;         ///< 键值的类型
+  // AttrType attr_type;         ///< 键值的类型
+  std::vector<AttrType> attr_type;         ///< 键值的类型
 
   const std::string to_string()
   {
     std::stringstream ss;
 
-    ss << "attr_length:" << attr_length << ","
+    ss << "attr_length:" << total_attr_length << ","
        << "key_length:" << key_length << ","
-       << "attr_type:" << attr_type << ","
-       << "root_page:" << root_page << ","
+       << "attr_type:";
+    for (auto t : attr_type){
+      ss << t << ",";
+    }
+    ss << "root_page:" << root_page << ","
        << "internal_max_size:" << internal_max_size << ","
        << "leaf_max_size:" << leaf_max_size << ";";
 
@@ -468,9 +512,18 @@ public:
    * 此函数创建一个名为fileName的索引。
    * attrType描述被索引属性的类型，attrLength描述被索引属性的长度
    */
+  // RC create(const char *file_name, 
+  //           AttrType attr_type, 
+  //           int attr_length, 
+  //           int internal_max_size = -1, 
+  //           int leaf_max_size = -1);
+
+  /**
+   * 此函数创建一个名为fileName的多列索引。
+   * attrType描述被索引属性的类型，attrLength描述被索引属性的长度
+   */
   RC create(const char *file_name, 
-            AttrType attr_type, 
-            int attr_length, 
+            std::vector<FieldMeta *> field_meta,
             int internal_max_size = -1, 
             int leaf_max_size = -1);
 

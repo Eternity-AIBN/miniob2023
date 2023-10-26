@@ -119,17 +119,45 @@ const FieldMeta *TableMeta::field(int index) const
 {
   return &fields_[index];
 }
-const FieldMeta *TableMeta::field(const char *name) const
+// const FieldMeta *TableMeta::field(const char *name) const
+// {
+//   if (nullptr == name) {
+//     return nullptr;
+//   }
+//   for (const FieldMeta &field : fields_) {
+//     if (0 == strcmp(field.name(), name)) {
+//       return &field;
+//     }
+//   }
+//   return nullptr;
+// }
+
+FieldMeta *TableMeta::field(const char *name)
 {
   if (nullptr == name) {
     return nullptr;
   }
-  for (const FieldMeta &field : fields_) {
+  for (FieldMeta &field : fields_) {
     if (0 == strcmp(field.name(), name)) {
       return &field;
     }
   }
   return nullptr;
+}
+
+std::vector<FieldMeta *> TableMeta::field(std::vector<std::string> names){
+  std::vector<FieldMeta *> res;
+  if (0 == names.size()) {
+    return res;
+  }
+  for (auto name: names){
+    for (FieldMeta &field : fields_) {
+      if (0 == strcmp(field.name(), name.c_str())) {
+        res.push_back(&field);
+      }
+    }
+  }
+  return res;
 }
 
 const FieldMeta *TableMeta::find_field_by_offset(int offset) const
@@ -168,7 +196,8 @@ const IndexMeta *TableMeta::index(const char *name) const
 const IndexMeta *TableMeta::find_index_by_field(const char *field) const
 {
   for (const IndexMeta &index : indexes_) {
-    if (0 == strcmp(index.field(), field)) {
+    // if (0 == strcmp(index.field(), field)) {
+    if (0 == strcmp(index.field()[0].c_str(), field)) {   // TODO 暂时没有考虑multi-index的情况
       return &index;
     }
   }
