@@ -38,7 +38,7 @@ RC ShowIndexExecutor::execute(SQLStageEvent *sql_event)
             // oper->append({table->name(), "1", all_index[i]->index_meta().name(), "1", all_index[i]->index_meta().field()});
             std::vector<std::string> tmp_filed = all_index[i]->index_meta().field();
             for (int j=0; j<tmp_filed.size(); j++){
-                oper->append({table->name(), "1", all_index[i]->index_meta().name(), std::to_string(i+1), tmp_filed[j]});
+                oper->append({table->name(), "1", all_index[i]->index_meta().name(), std::to_string(j+1), tmp_filed[j]});
             }
         }
 
