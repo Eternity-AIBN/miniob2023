@@ -34,8 +34,8 @@ public:
           // field_meta_(field_meta),
           index_name_(index_name)
   {
-    for (auto tmp : field_meta){
-      field_meta_.push_back(tmp);
+    for (int i=0; i<field_meta.size(); i++){
+      field_meta_.push_back(field_meta[i]);
     }
   }
 
@@ -45,7 +45,7 @@ public:
 
   Table *table() const { return table_; }
   // const FieldMeta *field_meta() const { return field_meta_; }
-  std::vector<FieldMeta *> field_meta() const { return field_meta_; }
+  std::vector<FieldMeta *> *field_meta() { return &field_meta_; }
   const std::string &index_name() const { return index_name_; }
 
 public:

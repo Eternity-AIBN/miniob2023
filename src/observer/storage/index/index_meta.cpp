@@ -43,7 +43,8 @@ RC IndexMeta::init(const char *name, std::vector<FieldMeta *> field)
 
   name_ = name;
   for (int i=0; i<field.size(); i++){
-    field_.push_back(field[i]->name());
+    std::string *tmp = new std::string(field[i]->name());
+    field_.push_back(*tmp);
   }
   
   return RC::SUCCESS;

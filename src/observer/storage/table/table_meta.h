@@ -47,7 +47,7 @@ public:
   const FieldMeta *field(int index) const;
   // const FieldMeta *field(const char *name) const;
   FieldMeta *field(const char *name);
-  std::vector<FieldMeta *> field(std::vector<std::string> names);
+  std::vector<FieldMeta *> *field(std::vector<std::string> names);
   const FieldMeta *find_field_by_offset(int offset) const;
   const std::vector<FieldMeta> *field_metas() const
   {
@@ -76,6 +76,7 @@ protected:
   int32_t     table_id_ = -1;
   std::string name_;
   std::vector<FieldMeta> fields_;  // 包含sys_fields
+  std::vector<FieldMeta *> res;
   std::vector<IndexMeta> indexes_;
 
   int record_size_ = 0;

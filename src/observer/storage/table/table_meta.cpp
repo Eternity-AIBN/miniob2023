@@ -140,15 +140,15 @@ FieldMeta *TableMeta::field(const char *name)
   for (FieldMeta &field : fields_) {
     if (0 == strcmp(field.name(), name)) {
       return &field;
-    }
   }
+    }
   return nullptr;
 }
 
-std::vector<FieldMeta *> TableMeta::field(std::vector<std::string> names){
-  std::vector<FieldMeta *> res;
+std::vector<FieldMeta *> *TableMeta::field(std::vector<std::string> names){
+  res.clear();
   if (0 == names.size()) {
-    return res;
+    return &res;
   }
   for (auto name: names){
     for (FieldMeta &field : fields_) {
@@ -157,7 +157,7 @@ std::vector<FieldMeta *> TableMeta::field(std::vector<std::string> names){
       }
     }
   }
-  return res;
+  return &res;
 }
 
 const FieldMeta *TableMeta::find_field_by_offset(int offset) const
