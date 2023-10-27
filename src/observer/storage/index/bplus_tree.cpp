@@ -1765,6 +1765,8 @@ RC BplusTreeHandler::delete_entry(const char *user_key, const RID *rid)
     LOG_WARN("failed to find leaf page. rc =%s", strrc(rc));
     return rc;
   }
+  LeafIndexNodeHandler leaf_node(file_header_, leaf_frame);
+  leaf_node.init_empty();
 
   return delete_entry_internal(latch_memo, leaf_frame, key);
 }
