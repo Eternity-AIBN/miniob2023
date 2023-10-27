@@ -161,7 +161,8 @@ RC BplusTreeIndex::insert_entry(const char *record, const RID *rid)
   // }
   // return index_handler_.insert_entry(record + offset__, rid);
 
-  return index_handler_.insert_entry(record + field_meta_[0]->offset(), rid);
+  // return index_handler_.insert_entry(record + field_meta_[0]->offset(), rid);
+  return index_handler_.insert_entry(record, rid);
 }
 
 RC BplusTreeIndex::delete_entry(const char *record, const RID *rid)

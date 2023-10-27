@@ -133,6 +133,10 @@ public:
       if(v2[pos] == '\0'){
         break;
       }
+      // int vv1 = *(int *)(v1 + pos);
+      // int vv2 = *(int *)(v2 + pos);
+      // printf("v1 = %d, v2 = %d\n", vv1, vv2);
+
 
       result = (*attr_comparator_[i])(v1 + pos, v2 + pos);
       if (result != 0) {
