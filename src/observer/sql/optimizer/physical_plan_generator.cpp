@@ -101,9 +101,10 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
 
   Index *index = nullptr;
   ValueExpr *value_expr = nullptr;
+  if(predicates.size() != 0){
   unique_ptr<Expression> &expr = predicates.back();
   // for (auto &expr : predicates) {
-    if (expr != nullptr && expr->type() == ExprType::COMPARISON) {
+    if (expr->type() == ExprType::COMPARISON) {
       auto comparison_expr = static_cast<ComparisonExpr *>(expr.get());
       // 简单处理，就找等值查询
       if (comparison_expr->comp() == EQUAL_TO) {
@@ -158,6 +159,7 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
       // }
     }
   // }
+  }
 
   if (index != nullptr) {
     ASSERT(value_expr != nullptr, "got an index but value expr is null ?");
