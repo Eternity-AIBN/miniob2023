@@ -18,6 +18,8 @@ See the Mulan PSL v2 for more details. */
 #include "storage/table/table.h"
 #include "storage/trx/trx.h"
 #include "sql/stmt/delete_stmt.h"
+#include "sql/operator/index_scan_physical_operator.h"
+#include "storage/index/bplus_tree_index.h"
 
 RC DeletePhysicalOperator::open(Trx *trx)
 {
@@ -45,7 +47,15 @@ RC DeletePhysicalOperator::next()
   }
 
   PhysicalOperator *child = children_[0].get();
+
+  bool delete_index = false;
+  if (IndexScanPhysicalOperator* derived = dynamic_cast<IndexScanPhysicalOperator*>(children_[0].get())){
+    delete_index = true;
+    printf("delete_index\n");
+  }
+
   while (RC::SUCCESS == (rc = child->next())) {
+    // printf("child->next()\n");
     Tuple *tuple = child->current_tuple();
     if (nullptr == tuple) {
       LOG_WARN("failed to get current record: %s", strrc(rc));
@@ -58,6 +68,12 @@ RC DeletePhysicalOperator::next()
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to delete record: %s", strrc(rc));
       return rc;
+    }
+    if(delete_index){
+      IndexScanPhysicalOperator* tmp = static_cast<IndexScanPhysicalOperator*>(child);
+      BplusTreeIndexScanner *btree_index = static_cast<BplusTreeIndexScanner*>(tmp->get_index_scanner());
+      BplusTreeScanner *btree_scan = btree_index->get_tree_scanner_();
+      btree_scan->set_iter_index(-1);
     }
   }
 

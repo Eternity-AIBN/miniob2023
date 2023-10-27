@@ -44,6 +44,10 @@ public:
 
   Tuple *current_tuple() override;
 
+  IndexScanner *get_index_scanner(){
+    return index_scanner_;
+  }
+
   void set_predicates(std::vector<std::unique_ptr<Expression>> &&exprs);
 
 private:

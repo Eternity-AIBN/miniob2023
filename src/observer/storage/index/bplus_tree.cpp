@@ -235,6 +235,19 @@ int LeafIndexNodeHandler::remove(const char *key, const KeyComparator &comparato
     return 1;
   }
   return 0;
+  // bool flag = true;
+  // int res = 0;
+  // while(flag){
+  //   bool found = false;
+  //   int index = lookup(comparator, key, &found);
+  //   if (found) {
+  //     this->remove(index);
+  //     res = 1;
+  //   }else{
+  //     flag = false;
+  //   }
+  // }
+  // return res;
 }
 
 RC LeafIndexNodeHandler::move_half_to(LeafIndexNodeHandler &other, DiskBufferPool *bp)

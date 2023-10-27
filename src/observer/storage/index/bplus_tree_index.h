@@ -66,6 +66,10 @@ public:
   RC open(const char *left_key, int left_len, bool left_inclusive, const char *right_key, int right_len,
       bool right_inclusive);
 
+  BplusTreeScanner *get_tree_scanner_(){
+    return &tree_scanner_;
+  }
+
 private:
   BplusTreeScanner tree_scanner_;
 };

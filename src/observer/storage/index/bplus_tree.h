@@ -687,6 +687,15 @@ public:
 
   RC close();
 
+  int get_iter_index() {
+    return iter_index_;
+  }
+
+  void set_iter_index(int tmp) {
+    iter_index_ = tmp;
+    return;
+  }
+
 private:
   /**
    * 如果key的类型是CHARS, 扩展或缩减user_key的大小刚好是schema中定义的大小
