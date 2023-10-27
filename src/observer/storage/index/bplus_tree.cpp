@@ -872,6 +872,7 @@ RC BplusTreeHandler::create(const char *file_name, std::vector<FieldMeta *> fiel
   for(auto t : field_meta){
     file_header->attr_type.push_back(t->type());
     file_header->attr_length.push_back(t->len());
+    file_header->attr_offset.push_back(t->offset());
   }
   file_header->internal_max_size = internal_max_size;
   file_header->leaf_max_size = leaf_max_size;
@@ -1451,8 +1452,17 @@ MemPoolItem::unique_ptr BplusTreeHandler::make_key(const char *user_key, const R
     LOG_WARN("Failed to alloc memory for key.");
     return nullptr;
   }
-  memcpy(static_cast<char *>(key.get()), user_key, file_header_.total_attr_length);
-  memcpy(static_cast<char *>(key.get()) + file_header_.total_attr_length, &rid, sizeof(rid));
+  // memcpy(static_cast<char *>(key.get()), user_key, file_header_.attr_length);
+  // memcpy(static_cast<char *>(key.get()) + file_header_.attr_length, &rid, sizeof(rid));
+  
+  // 传入数据的结构为: [bitmap of record] [index fields]
+  // key的结构为: [bitmap of record] [index fields] [Rid]
+  int pos = 0;
+  for (int i = 0; i < file_header_.attr_type.size(); i++) {
+    memcpy(static_cast<char *>(key.get()) + pos, user_key + pos, file_header_.attr_length[i]);    // TODO user_key + pos还是user_key + offset
+    pos += file_header_.attr_length[i];
+  }
+  memcpy(static_cast<char *>(key.get()) + pos, &rid, sizeof(rid));
   return key;
 }
 
@@ -1463,7 +1473,16 @@ RC BplusTreeHandler::insert_entry(const char *user_key, const RID *rid)
     return RC::INVALID_ARGUMENT;
   }
 
-  MemPoolItem::unique_ptr pkey = make_key(user_key, *rid);
+  // TODO how to support multi-index
+  int pos = 0;
+  char *fixed_user_key = (char *)mem_pool_item_->alloc();
+  for (int i = 0; i < file_header_.attr_type.size(); i++) {
+    memcpy(fixed_user_key + pos, user_key + file_header_.attr_offset[i], file_header_.attr_length[i]);
+    pos += file_header_.attr_length[i];
+  }
+
+  // MemPoolItem::unique_ptr pkey = make_key(user_key, *rid);
+  MemPoolItem::unique_ptr pkey = make_key(fixed_user_key, *rid);
   if (pkey == nullptr) {
     LOG_WARN("Failed to alloc memory for key.");
     return RC::NOMEM;
@@ -1723,8 +1742,14 @@ RC BplusTreeHandler::delete_entry(const char *user_key, const RID *rid)
   }
   char *key = static_cast<char *>(pkey.get());
 
-  memcpy(key, user_key, file_header_.total_attr_length);
-  memcpy(key + file_header_.total_attr_length, rid, sizeof(*rid));
+  // memcpy(key, user_key, file_header_.total_attr_length);
+  // memcpy(key + file_header_.total_attr_length, rid, sizeof(*rid));
+  int pos = 0;
+  for (int i = 0; i < file_header_.attr_type.size(); i++) {
+    memcpy(key + pos, user_key + file_header_.attr_offset[i], file_header_.attr_length[i]);
+    pos += file_header_.attr_length[i];
+  }
+  memcpy(key + pos, rid, sizeof(*rid));
 
   BplusTreeOperationType op = BplusTreeOperationType::DELETE;
   LatchMemo latch_memo(disk_buffer_pool_);

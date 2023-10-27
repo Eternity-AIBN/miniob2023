@@ -80,7 +80,8 @@ public:
       } break;
       default: {
         ASSERT(false, "unknown attr type. %d", attr_type_);
-        return 0;
+        // return 0;
+        abort();
       }
     }
   }
@@ -129,6 +130,10 @@ public:
     int result = 0;
     int pos = 0;
     for(int i = 0; i < attr_comparator_.size(); i++){
+      if(v2[pos] == '\0'){
+        break;
+      }
+
       result = (*attr_comparator_[i])(v1 + pos, v2 + pos);
       if (result != 0) {
         return result;
@@ -136,8 +141,13 @@ public:
       pos += attr_comparator_[i]->attr_length();
     }
 
-    const RID *rid1 = (const RID *)(v1 + pos);
-    const RID *rid2 = (const RID *)(v2 + pos);
+    int sum_len = 0;
+    for(int i = 0; i < attr_comparator_.size(); i++){
+      sum_len += attr_comparator_[i]->attr_length();
+    }
+
+    const RID *rid1 = (const RID *)(v1 + sum_len);
+    const RID *rid2 = (const RID *)(v2 + sum_len);
     return RID::compare(rid1, rid2);
   }
 
@@ -264,6 +274,7 @@ struct IndexFileHeader
   int32_t leaf_max_size;      ///< 叶子节点最大的键值对数
   int32_t total_attr_length;        ///< 键值的长度
   std::vector<int32_t> attr_length; 
+  std::vector<int32_t> attr_offset; 
   int32_t key_length;         ///< attr length + sizeof(RID)
   // AttrType attr_type;         ///< 键值的类型
   std::vector<AttrType> attr_type;         ///< 键值的类型

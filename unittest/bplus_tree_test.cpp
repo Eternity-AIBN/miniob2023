@@ -321,6 +321,8 @@ TEST(test_bplus_tree, test_leaf_index_node_handle)
   index_file_header.total_attr_length = 4;
   std::vector<int32_t> *tmp = new std::vector<int32_t>(1, 4);
   index_file_header.attr_length = *tmp;
+  std::vector<int32_t> *tmp_offest = new std::vector<int32_t>(1, 0);
+  index_file_header.attr_offset = *tmp_offest;
   index_file_header.key_length = 4 + sizeof(RID);
   // index_file_header.attr_type = INTS;
   std::vector<AttrType> *tmp2 = new std::vector<AttrType>(1, INTS);
@@ -383,6 +385,8 @@ TEST(test_bplus_tree, test_internal_index_node_handle)
   index_file_header.total_attr_length = 4;
   std::vector<int32_t> *tmp = new std::vector<int32_t>(1, 4);
   index_file_header.attr_length = *tmp;
+  std::vector<int32_t> *tmp_offest = new std::vector<int32_t>(1, 0);
+  index_file_header.attr_offset = *tmp_offest;
   index_file_header.key_length = 4 + sizeof(RID);
   // index_file_header.attr_type = INTS;
   std::vector<AttrType> *tmp2 = new std::vector<AttrType>(1, INTS);

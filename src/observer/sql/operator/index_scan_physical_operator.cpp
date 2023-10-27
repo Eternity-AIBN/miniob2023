@@ -15,6 +15,9 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/index_scan_physical_operator.h"
 #include "storage/index/index.h"
 #include "storage/trx/trx.h"
+#include "sql/expr/expression.h"
+
+class ComparisonExpr;
 
 IndexScanPhysicalOperator::IndexScanPhysicalOperator(
     Table *table, Index *index, bool readonly, 
@@ -40,12 +43,57 @@ RC IndexScanPhysicalOperator::open(Trx *trx)
     return RC::INTERNAL;
   }
 
-  IndexScanner *index_scanner = index_->create_scanner(left_value_.data(),
-      left_value_.length(),
-      left_inclusive_,
-      right_value_.data(),
-      right_value_.length(),
-      right_inclusive_);
+  // ComparisonExpr
+  // 暂时只考虑left都是FieldExpr，而right为ValueExpr
+  // const char *left;
+  // const char *right;
+  int left_len = 0;
+  int right_len = 0;
+  int value_len = 0;    
+  for (int i = 0; i < index_->index_meta().field().size(); i++) {
+    string tmp = index_->index_meta().field()[i];
+    const char *field_name = tmp.c_str();
+    value_len += table_->table_meta().field(field_name)->len();
+  }
+
+  char *left = new char[value_len];
+  char *right = new char[value_len];
+  int pos = 0;
+  // for (int i = 0; i < predicates_.size(); i++){
+  for (int i = predicates_.size()-1; i >=0 ; i--){
+    ComparisonExpr* comparisonExpr = static_cast<ComparisonExpr *>(predicates_[i].get());
+    ValueExpr* valueExpr = static_cast<ValueExpr *>(comparisonExpr->right().get());
+    Value cur_value = valueExpr->get_value();
+    if (nullptr != cur_value.data()) {
+      memcpy(left + pos, cur_value.data(), cur_value.length());
+      left_len += cur_value.length();
+
+      memcpy(right + pos, cur_value.data(), cur_value.length());
+      right_len += cur_value.length();
+      pos += cur_value.length();
+    } else {
+      left = nullptr;
+      left_len = value_len;
+
+      right = nullptr;
+      right_len = value_len;
+    }
+  }
+  // id和col1两列组合索引，如果查询条件只有id的情况
+  if(predicates_.size() != index_->index_meta().field().size()){
+    left[pos] = '\0';
+    right[pos] = '\0';
+  }
+
+  IndexScanner *index_scanner =
+      index_->create_scanner(left, left_len, left_inclusive_, right, right_len, right_inclusive_);
+
+  // IndexScanner *index_scanner = index_->create_scanner(left_value_.data(),
+  //     left_value_.length(),
+  //     left_inclusive_,
+  //     right_value_.data(),
+  //     right_value_.length(),
+  //     right_inclusive_);
   if (nullptr == index_scanner) {
     LOG_WARN("failed to create index scanner");
     return RC::INTERNAL;

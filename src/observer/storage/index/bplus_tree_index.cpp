@@ -153,12 +153,15 @@ RC BplusTreeIndex::close()
 
 RC BplusTreeIndex::insert_entry(const char *record, const RID *rid)
 {
-  int offset__ = 0;
-  for(auto tmp : field_meta_){
-    offset__ += tmp->offset();
-  }
   // return index_handler_.insert_entry(record + field_meta_.offset(), rid);
-  return index_handler_.insert_entry(record + offset__, rid);
+
+  // int offset__ = 0;
+  // for(int i=0; i<field_meta_.size(); i++){
+  //   offset__ += field_meta_[i]->offset();
+  // }
+  // return index_handler_.insert_entry(record + offset__, rid);
+
+  return index_handler_.insert_entry(record + field_meta_[0]->offset(), rid);
 }
 
 RC BplusTreeIndex::delete_entry(const char *record, const RID *rid)
