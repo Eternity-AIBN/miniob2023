@@ -193,11 +193,11 @@ const IndexMeta *TableMeta::index(const char *name) const
   return nullptr;
 }
 
-const IndexMeta *TableMeta::find_index_by_field(const char *field) const
+const IndexMeta *TableMeta::find_index_by_field(const char *field, int loc) const
 {
   for (const IndexMeta &index : indexes_) {
     // if (0 == strcmp(index.field(), field)) {
-    if (0 == strcmp(index.field()[0].c_str(), field)) {   // TODO 暂时没有考虑multi-index的情况
+    if (index.field().size()>loc && 0 == strcmp(index.field()[loc].c_str(), field)) {
       return &index;
     }
   }

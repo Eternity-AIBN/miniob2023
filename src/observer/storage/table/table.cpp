@@ -689,10 +689,10 @@ Index *Table::find_index(const char *index_name) const
   }
   return nullptr;
 }
-Index *Table::find_index_by_field(const char *field_name) const
+Index *Table::find_index_by_field(const char *field_name, int loc) const
 {
   const TableMeta &table_meta = this->table_meta();
-  const IndexMeta *index_meta = table_meta.find_index_by_field(field_name);
+  const IndexMeta *index_meta = table_meta.find_index_by_field(field_name, loc);
   if (index_meta != nullptr) {
     return this->find_index(index_meta->name());
   }

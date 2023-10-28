@@ -38,6 +38,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/calc_physical_operator.h"
 #include "sql/expr/expression.h"
 #include "common/log/log.h"
+#include "storage/index/bplus_tree_index.h"
 
 using namespace std;
 
@@ -101,6 +102,7 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
 
   Index *index = nullptr;
   ValueExpr *value_expr = nullptr;
+  int loc = predicates.size()-1;
   for (auto &expr : predicates) {
     if (expr->type() == ExprType::COMPARISON) {
       auto comparison_expr = static_cast<ComparisonExpr *>(expr.get());
@@ -132,7 +134,8 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
       }
 
       const Field &field = field_expr->field();
-      index = table->find_index_by_field(field.field_name());
+      index = table->find_index_by_field(field.field_name(), loc);
+      loc--;
       if (nullptr == index) {
         break;
       }
@@ -140,6 +143,7 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
   }
 
   if (index != nullptr) {
+    // printf("index name: %s\n", static_cast<BplusTreeIndex *>(index)->index_meta().name());
     ASSERT(value_expr != nullptr, "got an index but value expr is null ?");
 
     const Value &value = value_expr->get_value();

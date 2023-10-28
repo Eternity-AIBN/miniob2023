@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/trx/trx.h"
 #include "sql/stmt/delete_stmt.h"
 #include "sql/operator/index_scan_physical_operator.h"
+#include "sql/operator/predicate_physical_operator.h"
 #include "storage/index/bplus_tree_index.h"
 
 RC DeletePhysicalOperator::open(Trx *trx)
@@ -49,13 +50,20 @@ RC DeletePhysicalOperator::next()
   PhysicalOperator *child = children_[0].get();
 
   bool delete_index = false;
+  bool delete_index2 = false;
   if (IndexScanPhysicalOperator* derived = dynamic_cast<IndexScanPhysicalOperator*>(children_[0].get())){
     delete_index = true;
     // printf("delete_index\n");
   }
+  if (PredicatePhysicalOperator* derived = dynamic_cast<PredicatePhysicalOperator*>(children_[0].get())){
+    if (IndexScanPhysicalOperator* derived2 = dynamic_cast<IndexScanPhysicalOperator*>(derived->children()[0].get())){
+      delete_index2 = true;
+      // printf("delete_index2\n");
+    }
+  }
 
   while (RC::SUCCESS == (rc = child->next())) {
-    // printf("child->next()\n");
+    printf("child->next()\n");
     Tuple *tuple = child->current_tuple();
     if (nullptr == tuple) {
       LOG_WARN("failed to get current record: %s", strrc(rc));
@@ -71,6 +79,13 @@ RC DeletePhysicalOperator::next()
     }
     if(delete_index){
       IndexScanPhysicalOperator* tmp = static_cast<IndexScanPhysicalOperator*>(child);
+      BplusTreeIndexScanner *btree_index = static_cast<BplusTreeIndexScanner*>(tmp->get_index_scanner());
+      BplusTreeScanner *btree_scan = btree_index->get_tree_scanner_();
+      btree_scan->set_iter_index(-1);  //本来是多少就得是多少，不能都为-1，所以改为减去1就行
+    }
+    if(delete_index2){
+      PredicatePhysicalOperator* tt = static_cast<PredicatePhysicalOperator*>(child);
+      IndexScanPhysicalOperator* tmp = static_cast<IndexScanPhysicalOperator*>(tt->children()[0].get());
       BplusTreeIndexScanner *btree_index = static_cast<BplusTreeIndexScanner*>(tmp->get_index_scanner());
       BplusTreeScanner *btree_scan = btree_index->get_tree_scanner_();
       btree_scan->set_iter_index(-1);  //本来是多少就得是多少，不能都为-1，所以改为减去1就行
