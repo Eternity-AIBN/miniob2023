@@ -20,6 +20,11 @@ typedef struct TableAndCondition {
   std::vector<ConditionSqlNode> condition_name;
 } TableAndCondition;
 
+typedef struct AttributeAndName {
+  std::vector<std::string> attribute_name;
+  std::vector<Value> value;
+} AttributeAndName;
+
 string token_name(const char *sql_string, YYLTYPE *llocp)
 {
   return string(sql_string + llocp->first_column, llocp->last_column - llocp->first_column + 1);
@@ -133,6 +138,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   std::vector<std::string> *        relation_list;
   std::vector<std::string> *        id_lists;
   struct TableAndCondition *        table_and_condition;
+  struct AttributeAndName *         attribute_and_name;
   char *                            string;
   int                               number;
   float                             floats;
@@ -167,6 +173,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <id_lists>            id_list
 %type <condition_list>      inner_join_conditions
 %type <table_and_condition> rel_list_join
+%type <attribute_and_name>  update_list
 %type <rel_attr_list>       attr_list
 %type <agg_rel_attr_list>   agg_attr_list
 %type <expression>          expression
@@ -472,20 +479,48 @@ delete_stmt:    /*  delete 语句的语法解析树*/
     }
     ;
 update_stmt:      /*  update 语句的语法解析树*/
-    UPDATE ID SET ID EQ value where 
+    UPDATE ID SET ID EQ value update_list where 
     {
       $$ = new ParsedSqlNode(SCF_UPDATE);
       $$->update.relation_name = $2;
-      $$->update.attribute_name = $4;
-      $$->update.value = *$6;
+      // $$->update.attribute_name = $4;
       if ($7 != nullptr) {
-        $$->update.conditions.swap(*$7);
+        $$->update.attribute_name.swap($7->attribute_name);
+        $$->update.value.swap($7->value);
         delete $7;
+      }
+      $$->update.attribute_name.push_back($4);
+      std::reverse($$->update.attribute_name.begin(), $$->update.attribute_name.end());
+      // $$->update.value = *$6;
+      $$->update.value.push_back(*$6);
+      std::reverse($$->update.value.begin(), $$->update.value.end());
+
+      if ($8 != nullptr) {
+        $$->update.conditions.swap(*$8);
+        delete $8;
       }
       free($2);
       free($4);
     }
     ;
+
+update_list:
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | COMMA ID EQ value update_list {
+      if ($5 != nullptr) {
+        $$ = $5;
+      } else {
+        $$ = new AttributeAndName;
+      }
+      $$->attribute_name.push_back($2);
+      $$->value.push_back(*$4);
+      free($2);
+    }
+    ;
+
 select_stmt:        /*  select 语句的语法解析树*/
     SELECT select_attr FROM ID rel_list where
     {

@@ -121,7 +121,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 117 "yacc_sql.y"
+#line 122 "yacc_sql.y"
 
   ParsedSqlNode *                   sql_node;
   ConditionSqlNode *                condition;
@@ -141,12 +141,13 @@ union YYSTYPE
   std::vector<std::string> *        relation_list;
   std::vector<std::string> *        id_lists;
   struct TableAndCondition *        table_and_condition;
+  struct AttributeAndName *         attribute_and_name;
   char *                            string;
   int                               number;
   float                             floats;
   char *                            dates;
 
-#line 150 "yacc_sql.hpp"
+#line 151 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;
