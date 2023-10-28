@@ -42,7 +42,7 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update, Stmt *&stmt)
   }
 
   // const char *values = update.value.data();
-  const Value values = update.value;
+  Value values = update.value;
   const TableMeta &table_meta = table->table_meta();
   const int field_num = table_meta.field_num() - table_meta.sys_field_num();
   
@@ -54,6 +54,15 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update, Stmt *&stmt)
     const std::string field_name = field_meta->name();
     if (field_name == update.attribute_name) {  
       // flag = 1;
+      if (field_meta->type() == DATES){   // 日期列的更新，传入的update.value通常是"1999-02-01"，会被当成CHARS类型，需要转换为DATES类型
+        int32_t date = -1;
+        RC rc = string_to_date(values.get_string(), date);
+        if (rc != RC::SUCCESS){
+          LOG_WARN("field_type is date error");
+          return rc;
+        }
+        values.set_date(date);
+      }
       std::unordered_map<std::string, Table *> table_map;
       table_map.insert(std::pair<std::string, Table *>(std::string(table_name), table));
 
