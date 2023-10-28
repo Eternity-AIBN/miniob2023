@@ -51,7 +51,7 @@ RC DeletePhysicalOperator::next()
   bool delete_index = false;
   if (IndexScanPhysicalOperator* derived = dynamic_cast<IndexScanPhysicalOperator*>(children_[0].get())){
     delete_index = true;
-    printf("delete_index\n");
+    // printf("delete_index\n");
   }
 
   while (RC::SUCCESS == (rc = child->next())) {
@@ -73,7 +73,7 @@ RC DeletePhysicalOperator::next()
       IndexScanPhysicalOperator* tmp = static_cast<IndexScanPhysicalOperator*>(child);
       BplusTreeIndexScanner *btree_index = static_cast<BplusTreeIndexScanner*>(tmp->get_index_scanner());
       BplusTreeScanner *btree_scan = btree_index->get_tree_scanner_();
-      btree_scan->set_iter_index(-1);
+      btree_scan->set_iter_index(-1);  //本来是多少就得是多少，不能都为-1，所以改为减去1就行
     }
   }
 

@@ -692,7 +692,7 @@ public:
   }
 
   void set_iter_index(int tmp) {
-    iter_index_ = tmp;
+    iter_index_ += tmp;
     return;
   }
 

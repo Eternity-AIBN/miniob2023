@@ -211,7 +211,7 @@ RC BplusTreeIndexScanner::open(
 
 RC BplusTreeIndexScanner::next_entry(RID *rid)
 {
-  printf("tree_scanner_.iter_index = %d\n", tree_scanner_.get_iter_index());
+  // printf("tree_scanner_.iter_index = %d\n", tree_scanner_.get_iter_index());
   return tree_scanner_.next_entry(*rid);
 }
 
