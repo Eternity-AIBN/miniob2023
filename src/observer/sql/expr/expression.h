@@ -387,10 +387,6 @@ public:
   RC get_value(Value &value) const;
 
   // For no agg-func
-  // void set_select_node(SelectSqlNode *sql_node)
-  // {
-  //   select_sql = sql_node;
-  // }
   SelectSqlNode *get_select_node() const
   {
     return select_sql;
@@ -413,10 +409,6 @@ public:
   }
 
   // For agg-func
-  // void set_select_agg_node(SelectAggSqlNode *sql_node)
-  // {
-  //   select_agg_sql = sql_node;
-  // }
   SelectAggSqlNode *get_select_agg_node() const
   {
     return select_agg_sql;

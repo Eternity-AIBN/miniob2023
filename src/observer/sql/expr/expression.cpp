@@ -420,7 +420,7 @@ RC SubQueryExpression::create_expression(Expression *&expr, Expression *&res_exp
   Stmt *tmp_stmt = nullptr;
   RC rc;
   SubQueryExpression *sub_expr = new SubQueryExpression();
-  if(nullptr == select_agg_sql){
+  if(nullptr == static_cast<SubQueryExpression *>(expr)->get_select_agg_node()){
     // assert(select_sql != nullptr);
     rc = SelectStmt::create(db, *(static_cast<SubQueryExpression *>(expr)->get_select_node()), tmp_stmt);
     if (RC::SUCCESS != rc) {
@@ -430,7 +430,7 @@ RC SubQueryExpression::create_expression(Expression *&expr, Expression *&res_exp
     sub_expr->set_sub_query_stmt((SelectStmt *)tmp_stmt);
     res_expr = sub_expr;
   }else{
-    rc = SelectAggStmt::create(db, *select_agg_sql, tmp_stmt);
+    rc = SelectAggStmt::create(db, *(static_cast<SubQueryExpression *>(expr)->get_select_agg_node()), tmp_stmt);
     if (RC::SUCCESS != rc) {
       LOG_ERROR("SubQueryExpression Create SelectStmt Failed. RC = %d:%s", rc, strrc(rc));
       return rc;
