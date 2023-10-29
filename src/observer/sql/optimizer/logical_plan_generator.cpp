@@ -427,7 +427,6 @@ RC LogicalPlanGenerator::create_plan(
     return rc;
   }
 
-  // unique_ptr<LogicalOperator> update_oper(new UpdateLogicalOperator(table, update_stmt->values(), update_stmt->attribute_name()));
   unique_ptr<LogicalOperator> update_oper(new UpdateLogicalOperator(table, update_stmt->exprs(), update_stmt->fields_, update_stmt->attribute_name()));
 
   if (predicate_oper) {

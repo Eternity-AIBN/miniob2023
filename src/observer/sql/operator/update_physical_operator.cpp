@@ -5,21 +5,87 @@
 #include "storage/trx/trx.h"
 #include "sql/stmt/update_stmt.h"
 #include "util/typecast.h"
+#include "sql/optimizer/logical_plan_generator.h"
+#include "sql/optimizer/physical_plan_generator.h"
+#include "sql/operator/project_logical_operator.h"
+#include "sql/operator/project_agg_logical_operator.h"
+#include "sql/operator/project_physical_operator.h"
+#include "sql/operator/project_agg_physical_operator.h"
+#include "sql/stmt/select_stmt.h"
+#include "sql/stmt/select_agg_stmt.h"
+
 
 RC UpdatePhysicalOperator::open(Trx *trx)
 {
   if (children_.empty()) {
     return RC::SUCCESS;
   }
+  RC rc = RC::SUCCESS;
 
   // TODO  先 get_value 拿到 TupleCell，根据 TupleCell 构造 Value，以适配 table update_record 的接口
-  // auto get_cell_for_sub_query =  // TODO sub-query
+  auto get_value_for_sub_query = [](Trx *trx, const SubQueryExpression *expr, Value &cell) {
+    expr->open_sub_query(trx);
+    RC rc = expr->get_value(cell);
+    // if (RC::RECORD_EOF == rc) {      // TODO support NULL
+    //   // e.g. a = select a  -> a = null
+    //   cell.set_null();
+    // } else 
+    if (RC::SUCCESS == rc) {
+      Value tmp_cell;
+      if (RC::SUCCESS == (rc = expr->get_value(tmp_cell))) {
+        // e.g. a = select a  -> a = (1, 2, 3)
+        // std::cout << "Should not have rows more than 1" << std::endl;
+        expr->close_sub_query();
+        return RC::INTERNAL;
+      }
+    } else {
+      expr->close_sub_query();
+      return rc;
+    }
+    expr->close_sub_query();
+    return RC::SUCCESS;
+  };
 
-  // std::vector<Value *> values;
+
   for (size_t i = 0; i < exprs_.size(); ++i) {
-    // if (ExprType::SUBQUERYTYPE == expr->type()) {  // TODO sub-query
-    assert(ExprType::VALUE == exprs_[i]->type());
-    Value *update_value = new Value(((ValueExpr *)exprs_[i])->get_value());
+    Value *update_value = nullptr;
+    if (ExprType::SUBQUERY == exprs_[i]->type()) { 
+      auto sub_query_expr = (SubQueryExpression *)exprs_[i];
+      // 同样要判断是select还是select-agg
+      Stmt *sub_select;
+      if (nullptr == sub_query_expr->get_sub_query_agg_stmt()){   // select
+        sub_select = dynamic_cast<Stmt *>(sub_query_expr->get_sub_query_stmt());
+      }else{
+        sub_select = dynamic_cast<Stmt *>(sub_query_expr->get_sub_query_agg_stmt());
+      }
+      // 根据 stmt 生成 LogicalOperator
+      std::unique_ptr<LogicalOperator> logical_oper;
+      LogicalPlanGenerator *logical_plan_generator = new LogicalPlanGenerator(); 
+      rc = logical_plan_generator->create(sub_select, logical_oper);
+      if(RC::SUCCESS != rc) { return rc; }
+      // 根据 LogicalOperator 生成 PhysicalOperator
+      std::unique_ptr<PhysicalOperator> physical_oper;
+      PhysicalPlanGenerator *physical_plan_generator = new PhysicalPlanGenerator(); 
+      rc = physical_plan_generator->create(*logical_oper, physical_oper);
+      if(RC::SUCCESS != rc) { return rc; }
+
+      if (nullptr == sub_query_expr->get_sub_query_agg_stmt()){   // select
+        sub_query_expr->set_sub_query_top_oper(static_cast<ProjectPhysicalOperator *>(physical_oper.get()));
+      }else{
+        sub_query_expr->set_sub_query_agg_top_oper(static_cast<ProjectAggPhysicalOperator *>(physical_oper.get()));
+      }
+
+      Value cell;
+      if (RC::SUCCESS != (rc = get_value_for_sub_query(trx, sub_query_expr, cell))) {
+        LOG_WARN("Update get cell for sub_query failed. RC = %d:%s", rc, strrc(rc));
+        // return rc;
+        multi_records = true;
+      }
+      update_value = new Value(cell);
+    } else{
+      assert(ExprType::VALUE == exprs_[i]->type());
+      update_value = new Value(((ValueExpr *)exprs_[i])->get_value());
+    }
     
     const FieldMeta *field_meta = fields_[i];
     const AttrType field_type = field_meta->type();
@@ -27,7 +93,7 @@ RC UpdatePhysicalOperator::open(Trx *trx)
     if (field_type != value_type){    // 类型转换
       if (field_type == DATES){
         int32_t date = -1;
-        RC rc = string_to_date(update_value->get_string(), date);
+        rc = string_to_date(update_value->get_string(), date);
         if (rc != RC::SUCCESS){
           LOG_WARN("field_type is date error");
           return rc;
@@ -62,7 +128,7 @@ RC UpdatePhysicalOperator::open(Trx *trx)
 
 
   std::unique_ptr<PhysicalOperator> &child = children_[0];
-  RC rc = child->open(trx);
+  rc = child->open(trx);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to open child operator: %s", strrc(rc));
     return rc;
@@ -82,6 +148,9 @@ RC UpdatePhysicalOperator::next()
 
   PhysicalOperator *child = children_[0].get();
   while (RC::SUCCESS == (rc = child->next())) {
+    if(multi_records){
+      return RC::INTERNAL;
+    }
     Tuple *tuple = child->current_tuple();
     if (nullptr == tuple) {
       LOG_WARN("failed to get current record: %s", strrc(rc));

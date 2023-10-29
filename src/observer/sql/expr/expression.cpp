@@ -14,6 +14,11 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/expr/expression.h"
 #include "sql/expr/tuple.h"
+#include "sql/operator/project_physical_operator.h"
+#include "sql/operator/project_agg_physical_operator.h"
+#include "sql/stmt/select_stmt.h"
+#include "sql/stmt/select_agg_stmt.h"
+#include "expression.h"
 
 using namespace std;
 
@@ -343,3 +348,106 @@ RC ArithmeticExpr::try_get_value(Value &value) const
 
   return calc_value(left_value, right_value, value);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// RC SubQueryExpression::get_value(const Tuple &tuple, Value &value) const{
+  
+// }
+
+RC SubQueryExpression::get_value(Value &value) const{
+  RC rc = RC::SUCCESS;
+  if(nullptr == sub_agg_top_oper_){
+    RC rc = sub_top_oper_->next();
+    // if (RC::RECORD_EOF == rc) {
+    //   value.set_null();
+    // }
+    if (RC::SUCCESS != rc) {
+      return rc;
+    }
+    Tuple *child_tuple = sub_top_oper_->current_tuple();
+    if (nullptr == child_tuple) {
+      LOG_WARN("failed to get current record. rc=%s", strrc(rc));
+      return RC::INTERNAL;
+    }
+    rc = child_tuple->cell_at(0, value);  // only need the first cell
+  }else{
+    RC rc = sub_agg_top_oper_->next();
+    // if (RC::RECORD_EOF == rc) {
+    //   value.set_null();
+    // }
+    if (RC::SUCCESS != rc) {
+      return rc;
+    }
+    Tuple *child_tuple = sub_agg_top_oper_->current_tuple();
+    if (nullptr == child_tuple) {
+      LOG_WARN("failed to get current record. rc=%s", strrc(rc));
+      return RC::INTERNAL;
+    }
+    rc = child_tuple->cell_at(0, value);  // only need the first cell
+  }
+  
+  return rc;
+}
+
+RC SubQueryExpression::open_sub_query(Trx *trx) const{
+  if(nullptr == sub_agg_top_oper_){
+    assert(nullptr != sub_top_oper_);
+    return sub_top_oper_->open(trx);
+  }else{
+    assert(nullptr != sub_agg_top_oper_);
+    return sub_agg_top_oper_->open(trx);
+  }
+  return RC::INTERNAL;
+}
+
+RC SubQueryExpression::close_sub_query() const{
+  if(nullptr == sub_agg_top_oper_){
+    assert(nullptr != sub_top_oper_);
+    return sub_top_oper_->close();
+  }else{
+    assert(nullptr != sub_agg_top_oper_);
+    return sub_agg_top_oper_->close();
+  }
+  return RC::INTERNAL;
+}
+
+// SubQueryExpression::create_expression(update.exprs[k], table_map, tables, expression, CompOp::EQUAL_TO, db)
+// 只用到 update.exprs[k]，结果放在 expression 中
+RC SubQueryExpression::create_expression(Expression *&expr, Expression *&res_expr, CompOp comp, Db *db)
+{
+  // 在这里判断是 select 还是 select-agg
+  assert(ExprType::SUBQUERY == expr->type());
+  Stmt *tmp_stmt = nullptr;
+  RC rc;
+  SubQueryExpression *sub_expr = new SubQueryExpression();
+  if(nullptr == select_agg_sql){
+    // assert(select_sql != nullptr);
+    rc = SelectStmt::create(db, *(static_cast<SubQueryExpression *>(expr)->get_select_node()), tmp_stmt);
+    if (RC::SUCCESS != rc) {
+      LOG_ERROR("SubQueryExpression Create SelectStmt Failed. RC = %d:%s", rc, strrc(rc));
+      return rc;
+    }
+    sub_expr->set_sub_query_stmt((SelectStmt *)tmp_stmt);
+    res_expr = sub_expr;
+  }else{
+    rc = SelectAggStmt::create(db, *select_agg_sql, tmp_stmt);
+    if (RC::SUCCESS != rc) {
+      LOG_ERROR("SubQueryExpression Create SelectStmt Failed. RC = %d:%s", rc, strrc(rc));
+      return rc;
+    }
+    sub_expr->set_sub_query_agg_stmt((SelectAggStmt *)tmp_stmt);
+    res_expr = sub_expr;
+  }
+  return RC::SUCCESS;
+  // switch (comp) {    // check projects num——不知道是什么，后面再看
+  //   case EXISTS_OP:
+  //   case NOT_EXISTS:
+  //     break;
+  //   default: {
+  //     if (((SelectStmt *)tmp_stmt)->projects().size() != 1) {
+  //       return RC::SQL_SYNTAX;
+  //     }
+  //     break;
+  //   }
+  // }
+} 

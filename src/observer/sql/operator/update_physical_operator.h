@@ -44,7 +44,8 @@ public:
 
 public:
   std::vector<const FieldMeta *> fields_;       // 把要更新的字段类型保存下来，后在operator中就不用再判断了
-
+  bool multi_records = false;
+  
 private:
   Table *table_ = nullptr;
   Trx *trx_ = nullptr;

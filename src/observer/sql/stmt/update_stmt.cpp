@@ -76,14 +76,20 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
         //   values->set_date(date);
         // }
         flag = true;
-        // new_values.push_back(*values);
-        // TODO 在这里构造expr
         Expression *expression = nullptr;
-        const std::unordered_map<std::string, Table *> table_map;
-        const std::vector<Table *> tables;
-        if (ExprType::VALUE == update.exprs[k]->type()) {
-          // Value *tmp = ((ValueExpr *)(update.exprs[k]))->get_value();
+        // const std::unordered_map<std::string, Table *> table_map;
+        // const std::vector<Table *> tables;
+        if (ExprType::VALUE == update.exprs[k]->type()) {     // update set col1=1
           expression = new ValueExpr(((ValueExpr *)(update.exprs[k]))->get_value());
+        } else if (ExprType::SUBQUERY == update.exprs[k]->type()) {   // update set col1=(select xxx)
+          SubQueryExpression *sub_query_expr = new SubQueryExpression();
+          RC rc = sub_query_expr->create_expression(update.exprs[k], expression, CompOp::EQUAL_TO, db);
+          if (RC::SUCCESS != rc) {
+            LOG_ERROR("UpdateStmt Create SubQueryExpression Failed. RC = %d:%s", rc, strrc(rc));
+            return rc;
+        }
+        } else {
+          return RC::SQL_SYNTAX;
         }
 
         assert(nullptr != expression);

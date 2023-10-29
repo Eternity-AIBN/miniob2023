@@ -21,10 +21,14 @@ See the Mulan PSL v2 for more details. */
 #include "storage/field/field.h"
 #include "sql/parser/value.h"
 #include "common/log/log.h"
+#include "sql/parser/parse_defs.h"
+#include "storage/db/db.h"
 
 class Tuple;
 class SelectStmt;
-class ProjectOperator;
+class SelectAggStmt;
+class ProjectPhysicalOperator;
+class ProjectAggPhysicalOperator;
 
 /**
  * @defgroup Expression
@@ -313,50 +317,138 @@ private:
  * @brief 子查询表达式
  * @ingroup Expression
  */
-// class SubQueryExpression : public Expression {
-// public:
-//   SubQueryExpression() = default;
-//   virtual ~SubQueryExpression() = default;
+class SubQueryExpression : public Expression {
+public:
+  SubQueryExpression() = default;
+  // SubQueryExpression(SelectSqlNode &sql_node)
+  // {
+  //   std::vector<RelAttrSqlNode> new_attributes;  
+  //   std::vector<std::string> new_relations; 
+  //   std::vector<ConditionSqlNode> new_conditions;
+  //   for(int i=0; i<sql_node.attributes.size(); i++){
+  //     RelAttrSqlNode *tmp_rel = new RelAttrSqlNode();
+  //     std::string *tmp_relation_name = new std::string(sql_node.attributes[i].relation_name.c_str());
+  //     std::string *tmp_attribute_name = new std::string(sql_node.attributes[i].attribute_name.c_str());
+  //     tmp_rel->relation_name = *tmp_relation_name;
+  //     tmp_rel->attribute_name = *tmp_attribute_name;
+  //     new_attributes.push_back(*tmp_rel);
+  //   }
+  //   for(int i=0; i<sql_node.relations.size(); i++){
+  //     std::string *tmp = new std::string(sql_node.relations[i].c_str());
+  //     new_relations.push_back(*tmp);
+  //   }
+  //   for(int i=0; i<sql_node.conditions.size(); i++){
+  //     ConditionSqlNode *tmp_condition = new ConditionSqlNode();
+  //     tmp_condition->left_is_attr = sql_node.conditions[i].left_is_attr;
+  //     tmp_condition->exist_not = sql_node.conditions[i].exist_not;
+  //     tmp_condition->right_is_attr = sql_node.conditions[i].right_is_attr;
+  //     tmp_condition->comp = sql_node.conditions[i].comp;
+  //     // Value           left_value; 
+  //     Value *tmp_left_value = new Value(sql_node.conditions[i].left_value);
+  //     tmp_condition->left_value = *tmp_left_value;
+  //     // Value           right_value;
+  //     Value *tmp_right_value= new Value(sql_node.conditions[i].right_value);
+  //     tmp_condition->right_value = *tmp_right_value;
+  //     // RelAttrSqlNode  left_attr;
+  //     RelAttrSqlNode *tmp_left_attr = new RelAttrSqlNode();
+  //     std::string *tmp_relation_name = new std::string(sql_node.conditions[i].left_attr.relation_name.c_str());
+  //     std::string *tmp_attribute_name = new std::string(sql_node.conditions[i].left_attr.attribute_name.c_str());
+  //     tmp_left_attr->relation_name = *tmp_relation_name;
+  //     tmp_left_attr->attribute_name = *tmp_attribute_name;
+  //     tmp_condition->left_attr = *tmp_left_attr;
+  //     // RelAttrSqlNode  right_attr;
+  //     RelAttrSqlNode *tmp_right_attr = new RelAttrSqlNode();
+  //     std::string *tmp_relation_name2 = new std::string(sql_node.conditions[i].right_attr.relation_name.c_str());
+  //     std::string *tmp_attribute_name2 = new std::string(sql_node.conditions[i].right_attr.attribute_name.c_str());
+  //     tmp_right_attr->relation_name = *tmp_relation_name2;
+  //     tmp_right_attr->attribute_name = *tmp_attribute_name2;
+  //     tmp_condition->right_attr = *tmp_right_attr;
+  //     new_conditions.push_back(*tmp_condition);
+  //   }
+  //   select_sql.attributes = new_attributes;
+  //   select_sql.relations = new_relations;
+  //   select_sql.conditions = new_conditions;
+  // }
+  SubQueryExpression(SelectSqlNode *sql_node) : select_sql(sql_node)
+  {}
+  SubQueryExpression(SelectAggSqlNode *sql_node) : select_agg_sql(sql_node)
+  {}
+  virtual ~SubQueryExpression() = default;
 
-//   ExprType type() const override
-//   {
-//     return ExprType::SUBQUERY;
-//   }
+  ExprType type() const override
+  {
+    return ExprType::SUBQUERY;
+  }
 
-//   void to_string(std::ostream &os) const override
-//   {}
+  RC get_value(const Tuple &tuple, Value &value) const override { return RC::SUCCESS; }
 
-//   RC get_value(const Tuple &tuple, TupleCell &final_cell) const override;
+  AttrType value_type() const override { return AttrType::UNDEFINED; }
 
-//   RC get_value(TupleCell &final_cell) const;
+  RC get_value(Value &value) const;
 
-//   void set_sub_query_stmt(SelectStmt *sub_stmt)
-//   {
-//     sub_stmt_ = sub_stmt;
-//   }
+  // For no agg-func
+  // void set_select_node(SelectSqlNode *sql_node)
+  // {
+  //   select_sql = sql_node;
+  // }
+  SelectSqlNode *get_select_node() const
+  {
+    return select_sql;
+  }
+  void set_sub_query_stmt(SelectStmt *sub_stmt)
+  {
+    sub_stmt_ = sub_stmt;
+  }
+  SelectStmt *get_sub_query_stmt() const
+  {
+    return sub_stmt_;
+  }
+  void set_sub_query_top_oper(ProjectPhysicalOperator *oper)
+  {
+    sub_top_oper_ = oper;
+  }
+  ProjectPhysicalOperator *get_sub_query_top_oper() const
+  {
+    return sub_top_oper_;
+  }
 
-//   SelectStmt *get_sub_query_stmt() const
-//   {
-//     return sub_stmt_;
-//   }
+  // For agg-func
+  // void set_select_agg_node(SelectAggSqlNode *sql_node)
+  // {
+  //   select_agg_sql = sql_node;
+  // }
+  SelectAggSqlNode *get_select_agg_node() const
+  {
+    return select_agg_sql;
+  }
+  void set_sub_query_agg_stmt(SelectAggStmt *sub_agg_stmt)
+  {
+    sub_agg_stmt_ = sub_agg_stmt;
+  }
+  SelectAggStmt *get_sub_query_agg_stmt() const
+  {
+    return sub_agg_stmt_;
+  }
+  void set_sub_query_agg_top_oper(ProjectAggPhysicalOperator *oper)
+  {
+    sub_agg_top_oper_ = oper;
+  }
+  ProjectAggPhysicalOperator *get_sub_query_agg_top_oper() const
+  {
+    return sub_agg_top_oper_;
+  }
 
-//   void set_sub_query_top_oper(ProjectOperator *oper)
-//   {
-//     sub_top_oper_ = oper;
-//   }
+  RC open_sub_query(Trx *trx) const;
+  RC close_sub_query() const;
 
-//   ProjectOperator *get_sub_query_top_oper() const
-//   {
-//     return sub_top_oper_;
-//   }
+  RC create_expression(Expression *&expr, Expression *&res_expr, CompOp comp = NO_OP, Db *db = nullptr);
 
-//   RC open_sub_query() const;
-//   RC close_sub_query() const;
+private:
+  SelectSqlNode *select_sql;
+  SelectStmt *sub_stmt_ = nullptr;
+  ProjectPhysicalOperator *sub_top_oper_ = nullptr;
 
-//   static RC create_expression(const Expr *expr, const std::unordered_map<std::string, Table *> &table_map,
-//       const std::vector<Table *> &tables, Expression *&res_expr, CompOp comp = NO_OP, Db *db = nullptr);
-
-// private:
-//   SelectStmt *sub_stmt_ = nullptr;
-//   ProjectOperator *sub_top_oper_ = nullptr;
-// };
+  SelectAggSqlNode *select_agg_sql = nullptr;
+  SelectAggStmt *sub_agg_stmt_ = nullptr;
+  ProjectAggPhysicalOperator *sub_agg_top_oper_ = nullptr;
+};
