@@ -149,6 +149,7 @@ RC UpdatePhysicalOperator::next()
   PhysicalOperator *child = children_[0].get();
   while (RC::SUCCESS == (rc = child->next())) {
     if(multi_records){
+      multi_records = false;
       return RC::INTERNAL;
     }
     Tuple *tuple = child->current_tuple();
