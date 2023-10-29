@@ -332,7 +332,7 @@ TEST(test_bplus_tree, test_leaf_index_node_handle)
 
   KeyComparator key_comparator;
   // key_comparator.init(INTS, 4);
-  key_comparator.init(*tmp2, *tmp);
+  key_comparator.init(*tmp2, *tmp, false);
 
   LeafIndexNodeHandler leaf_node(index_file_header, &frame);
   leaf_node.init_empty();
@@ -395,7 +395,7 @@ TEST(test_bplus_tree, test_internal_index_node_handle)
   Frame frame;
 
   KeyComparator key_comparator;
-  key_comparator.init(*tmp2, *tmp);
+  key_comparator.init(*tmp2, *tmp, false);
 
   InternalIndexNodeHandler internal_node(index_file_header, &frame);
   internal_node.init_empty();

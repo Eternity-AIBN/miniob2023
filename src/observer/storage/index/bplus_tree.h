@@ -99,9 +99,9 @@ private:
 class KeyComparator 
 {
 public:
-  void init(std::vector<AttrType> type, std::vector<int> length)
+  void init(std::vector<AttrType> type, std::vector<int> length, bool unique)
   {
-    // attr_comparator_.init(type, length);
+    unique_ = unique;
     for (int i=0; i<type.size(); i++){
       AttrComparator *tmp = new AttrComparator;
       tmp->init(type[i], length[i]);
@@ -139,7 +139,7 @@ public:
 
 
       result = (*attr_comparator_[i])(v1 + pos, v2 + pos);
-      if (result != 0) {
+      if (unique_ || result != 0) {
         return result;
       }
       pos += attr_comparator_[i]->attr_length();
@@ -158,6 +158,7 @@ public:
 private:
   // AttrComparator attr_comparator_;
   std::vector<AttrComparator *> attr_comparator_;
+  bool unique_;
 };
 
 /**
@@ -273,6 +274,7 @@ struct IndexFileHeader
     memset(this, 0, sizeof(IndexFileHeader));
     root_page = BP_INVALID_PAGE_NUM;
   }
+  bool unique;
   PageNum root_page;          ///< 根节点在磁盘中的页号
   int32_t internal_max_size;  ///< 内部节点最大的键值对数
   int32_t leaf_max_size;      ///< 叶子节点最大的键值对数
@@ -539,6 +541,7 @@ public:
    */
   RC create(const char *file_name, 
             std::vector<FieldMeta *> field_meta,
+            bool unique, 
             int internal_max_size = -1, 
             int leaf_max_size = -1);
 

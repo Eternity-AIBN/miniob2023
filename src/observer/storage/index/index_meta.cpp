@@ -20,6 +20,7 @@ See the Mulan PSL v2 for more details. */
 #include "json/json.h"
 
 const static Json::StaticString FIELD_NAME("name");
+const static Json::StaticString UNIQUE_OR_NOT("unique");
 const static Json::StaticString FIELD_FIELD_NAME("field_name");
 
 // RC IndexMeta::init(const char *name, const FieldMeta &field)
@@ -34,7 +35,7 @@ const static Json::StaticString FIELD_FIELD_NAME("field_name");
 //   return RC::SUCCESS;
 // }
 
-RC IndexMeta::init(const char *name, std::vector<FieldMeta *> field)
+RC IndexMeta::init(const char *name, std::vector<FieldMeta *> field, bool unique)
 {
   if (common::is_blank(name)) {
     LOG_ERROR("Failed to init index, name is empty.");
@@ -46,6 +47,7 @@ RC IndexMeta::init(const char *name, std::vector<FieldMeta *> field)
     std::string *tmp = new std::string(field[i]->name());
     field_.push_back(*tmp);
   }
+  unique_ = unique;
   
   return RC::SUCCESS;
 }
@@ -54,6 +56,7 @@ void IndexMeta::to_json(Json::Value &json_value) const
 {
   json_value[FIELD_NAME] = name_;
   json_value[FIELD_FIELD_NAME] = field_[0];  // TODO 暂时不考虑multi-index的情况
+  json_value[UNIQUE_OR_NOT] = unique_;
 }
 
 // RC IndexMeta::from_json(const TableMeta &table, const Json::Value &json_value, IndexMeta &index)
@@ -61,6 +64,7 @@ RC IndexMeta::from_json(TableMeta &table, const Json::Value &json_value, IndexMe
 {
   const Json::Value &name_value = json_value[FIELD_NAME];
   const Json::Value &field_value = json_value[FIELD_FIELD_NAME];
+  const Json::Value &unique_value = json_value[UNIQUE_OR_NOT];
   if (!name_value.isString()) {
     LOG_ERROR("Index name is not a string. json value=%s", name_value.toStyledString().c_str());
     return RC::INTERNAL;
@@ -73,6 +77,11 @@ RC IndexMeta::from_json(TableMeta &table, const Json::Value &json_value, IndexMe
     return RC::INTERNAL;
   }
 
+  if (!unique_value.isBool()) { 
+    LOG_ERROR("Unique is not a boolean. json value=%s", unique_value.toStyledString().c_str());
+    return RC::GENERIC_ERROR;
+  }
+
   // const FieldMeta *field = table.field(field_value.asCString());
   FieldMeta *field = table.field(field_value.asCString());
   if (nullptr == field) {
@@ -83,7 +92,7 @@ RC IndexMeta::from_json(TableMeta &table, const Json::Value &json_value, IndexMe
   std::vector<FieldMeta *> fields;
   fields.push_back(field);
   // return index.init(name_value.asCString(), *field);
-  return index.init(name_value.asCString(), fields);
+  return index.init(name_value.asCString(), fields, unique_value.asBool());
 }
 
 const char *IndexMeta::name() const

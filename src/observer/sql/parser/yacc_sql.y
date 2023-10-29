@@ -95,6 +95,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         DATE_T
         HELP
         EXIT
+        UNIQUE
         DOT //QUOTE
         INTO
         VALUES
@@ -305,6 +306,7 @@ create_index_stmt:    /*create index 语句的语法解析树*/
       CreateIndexSqlNode &create_index = $$->create_index;
       create_index.index_name = $3;
       create_index.relation_name = $5;
+      create_index.unique = false;
       free($3);
       free($5);
 
@@ -315,8 +317,26 @@ create_index_stmt:    /*create index 语句的语法解析树*/
       create_index.attribute_name.emplace_back($7);
       std::reverse(create_index.attribute_name.begin(), create_index.attribute_name.end());
 
-      // create_index.attribute_name = $7;
       free($7);
+    }
+    | CREATE UNIQUE INDEX ID ON ID LBRACE ID id_list RBRACE
+    {
+      $$ = new ParsedSqlNode(SCF_CREATE_INDEX);
+      CreateIndexSqlNode &create_index = $$->create_index;
+      create_index.index_name = $4;
+      create_index.relation_name = $6;
+      create_index.unique = true;
+      free($4);
+      free($6);
+
+      std::vector<std::string> *attr_names = $9;
+      if (attr_names != nullptr) {
+        create_index.attribute_name.swap(*attr_names);
+      }
+      create_index.attribute_name.emplace_back($8);
+      std::reverse(create_index.attribute_name.begin(), create_index.attribute_name.end());
+
+      free($8);
     }
     ;
 

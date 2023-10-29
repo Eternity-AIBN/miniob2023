@@ -832,7 +832,7 @@ RC BplusTreeHandler::sync()
 //   return RC::SUCCESS;
 // }
 
-RC BplusTreeHandler::create(const char *file_name, std::vector<FieldMeta *> field_meta, int internal_max_size /* = -1*/, int leaf_max_size /* = -1 */)
+RC BplusTreeHandler::create(const char *file_name, std::vector<FieldMeta *> field_meta, bool unique, int internal_max_size /* = -1*/, int leaf_max_size /* = -1 */)
 {
   BufferPoolManager &bpm = BufferPoolManager::instance();
   RC rc = bpm.create_file(file_name);
@@ -881,7 +881,7 @@ RC BplusTreeHandler::create(const char *file_name, std::vector<FieldMeta *> fiel
   IndexFileHeader *file_header = (IndexFileHeader *)pdata;
   file_header->total_attr_length = total_attr_length;
   file_header->key_length = total_attr_length + sizeof(RID);
-  // file_header->attr_type = attr_type;
+  file_header->unique = unique;
   for(auto t : field_meta){
     file_header->attr_type.push_back(t->type());
     file_header->attr_length.push_back(t->len());
@@ -906,7 +906,7 @@ RC BplusTreeHandler::create(const char *file_name, std::vector<FieldMeta *> fiel
     return RC::NOMEM;
   }
 
-  key_comparator_.init(file_header->attr_type, file_header->attr_length);
+  key_comparator_.init(file_header->attr_type, file_header->attr_length, unique);
   key_printer_.init(file_header->attr_type, file_header->attr_length);
 
   this->sync();
@@ -967,7 +967,7 @@ RC BplusTreeHandler::open(const char *file_name)
   // close old page_handle
   disk_buffer_pool->unpin_page(frame);
 
-  key_comparator_.init(file_header_.attr_type, file_header_.attr_length);
+  key_comparator_.init(file_header_.attr_type, file_header_.attr_length, file_header_.unique);
   key_printer_.init(file_header_.attr_type, file_header_.attr_length);
   LOG_INFO("Successfully open index %s", file_name);
   return RC::SUCCESS;

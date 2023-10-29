@@ -61,7 +61,7 @@ RC BplusTreeIndex::create(const char *file_name, const IndexMeta &index_meta, st
   Index::init(index_meta, field_meta);
 
   // RC rc = index_handler_.create(file_name, field_meta.type(), field_meta.len());  // TODO multi-index
-  RC rc = index_handler_.create(file_name, field_meta);
+  RC rc = index_handler_.create(file_name, field_meta, index_meta.unique());
   if (RC::SUCCESS != rc) {
     LOG_WARN("Failed to create index_handler, file_name:%s, index:%s, field_nums:%d, rc:%s",
         file_name,

@@ -62,7 +62,7 @@ RC CreateIndexStmt::create(Db *db, const CreateIndexSqlNode &create_index, Stmt 
       return RC::SCHEMA_INDEX_NAME_REPEAT;
     }
 
-    stmt = new CreateIndexStmt(table, field_metas, create_index.index_name);
+    stmt = new CreateIndexStmt(table, field_metas, create_index.index_name, create_index.unique);
   }else{      // multi-index
     const char *table_name = create_index.relation_name.c_str();
     if (is_blank(table_name) || is_blank(create_index.index_name.c_str()) || is_blank(create_index.attribute_name[0].c_str())) {
@@ -96,7 +96,7 @@ RC CreateIndexStmt::create(Db *db, const CreateIndexSqlNode &create_index, Stmt 
       return RC::SCHEMA_INDEX_NAME_REPEAT;
     }
 
-    stmt = new CreateIndexStmt(table, field_metas, create_index.index_name);
+    stmt = new CreateIndexStmt(table, field_metas, create_index.index_name, create_index.unique);
   }
 
   return RC::SUCCESS;

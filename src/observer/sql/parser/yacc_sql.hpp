@@ -85,34 +85,35 @@ extern int yydebug;
     DATE_T = 286,                  /* DATE_T  */
     HELP = 287,                    /* HELP  */
     EXIT = 288,                    /* EXIT  */
-    DOT = 289,                     /* DOT  */
-    INTO = 290,                    /* INTO  */
-    VALUES = 291,                  /* VALUES  */
-    FROM = 292,                    /* FROM  */
-    WHERE = 293,                   /* WHERE  */
-    INNER = 294,                   /* INNER  */
-    JOIN = 295,                    /* JOIN  */
-    AND = 296,                     /* AND  */
-    SET = 297,                     /* SET  */
-    ON = 298,                      /* ON  */
-    LOAD = 299,                    /* LOAD  */
-    DATA = 300,                    /* DATA  */
-    INFILE = 301,                  /* INFILE  */
-    EXPLAIN = 302,                 /* EXPLAIN  */
-    LIKE = 303,                    /* LIKE  */
-    NOT = 304,                     /* NOT  */
-    EQ = 305,                      /* EQ  */
-    LT = 306,                      /* LT  */
-    GT = 307,                      /* GT  */
-    LE = 308,                      /* LE  */
-    GE = 309,                      /* GE  */
-    NE = 310,                      /* NE  */
-    NUMBER = 311,                  /* NUMBER  */
-    FLOAT = 312,                   /* FLOAT  */
-    ID = 313,                      /* ID  */
-    DATE = 314,                    /* DATE  */
-    SSS = 315,                     /* SSS  */
-    UMINUS = 316                   /* UMINUS  */
+    UNIQUE = 289,                  /* UNIQUE  */
+    DOT = 290,                     /* DOT  */
+    INTO = 291,                    /* INTO  */
+    VALUES = 292,                  /* VALUES  */
+    FROM = 293,                    /* FROM  */
+    WHERE = 294,                   /* WHERE  */
+    INNER = 295,                   /* INNER  */
+    JOIN = 296,                    /* JOIN  */
+    AND = 297,                     /* AND  */
+    SET = 298,                     /* SET  */
+    ON = 299,                      /* ON  */
+    LOAD = 300,                    /* LOAD  */
+    DATA = 301,                    /* DATA  */
+    INFILE = 302,                  /* INFILE  */
+    EXPLAIN = 303,                 /* EXPLAIN  */
+    LIKE = 304,                    /* LIKE  */
+    NOT = 305,                     /* NOT  */
+    EQ = 306,                      /* EQ  */
+    LT = 307,                      /* LT  */
+    GT = 308,                      /* GT  */
+    LE = 309,                      /* LE  */
+    GE = 310,                      /* GE  */
+    NE = 311,                      /* NE  */
+    NUMBER = 312,                  /* NUMBER  */
+    FLOAT = 313,                   /* FLOAT  */
+    ID = 314,                      /* ID  */
+    DATE = 315,                    /* DATE  */
+    SSS = 316,                     /* SSS  */
+    UMINUS = 317                   /* UMINUS  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -121,7 +122,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 122 "yacc_sql.y"
+#line 123 "yacc_sql.y"
 
   ParsedSqlNode *                   sql_node;
   ConditionSqlNode *                condition;
@@ -148,7 +149,7 @@ union YYSTYPE
   float                             floats;
   char *                            dates;
 
-#line 152 "yacc_sql.hpp"
+#line 153 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

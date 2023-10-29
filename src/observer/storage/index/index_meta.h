@@ -38,12 +38,12 @@ public:
 
   // RC init(const char *name, const FieldMeta &field);
 
-  RC init(const char *name, std::vector<FieldMeta *> field);
+  RC init(const char *name, std::vector<FieldMeta *> field, bool unique);
 
 public:
   const char *name() const;
-  // const char *field() const;
   std::vector<std::string> field() const;
+  const bool unique() const { return unique_; }
 
   void desc(std::ostream &os) const;
 
@@ -54,6 +54,6 @@ public:
 
 protected:
   std::string name_;   // index's name
-  // std::string field_;  // field's name
   std::vector<std::string> field_;
+  bool unique_;
 };
