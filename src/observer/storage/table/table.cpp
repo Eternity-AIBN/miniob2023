@@ -277,15 +277,19 @@ RC Table::insert_record(Record &record)
 
   rc = insert_entry_of_indexes(record.data(), record.rid());
   if (rc != RC::SUCCESS) { // 可能出现了键值重复
-    RC rc2 = delete_entry_of_indexes(record.data(), record.rid(), false/*error_on_not_exists*/);
+    RC rc2 = record_handler_->delete_record(&record.rid());
+    if (rc2 != RC::SUCCESS) {
+      LOG_PANIC("Failed to rollback record data when insert index entries failed. table name=%s, rc=%d:%s",
+                name(), rc2, strrc(rc2));
+    rc2 = delete_entry_of_indexes(record.data(), record.rid(), false/*error_on_not_exists*/);
     if (rc2 != RC::SUCCESS) {
       LOG_ERROR("Failed to rollback index data when insert index entries failed. table name=%s, rc=%d:%s",
                 name(), rc2, strrc(rc2));
     }
-    rc2 = record_handler_->delete_record(&record.rid());
-    if (rc2 != RC::SUCCESS) {
-      LOG_PANIC("Failed to rollback record data when insert index entries failed. table name=%s, rc=%d:%s",
-                name(), rc2, strrc(rc2));
+    // rc2 = record_handler_->delete_record(&record.rid());
+    // if (rc2 != RC::SUCCESS) {
+    //   LOG_PANIC("Failed to rollback record data when insert index entries failed. table name=%s, rc=%d:%s",
+    //             name(), rc2, strrc(rc2));
     }
   }
   return rc;
@@ -436,7 +440,6 @@ RC Table::get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly
 //     LOG_INFO("Invalid input arguments, table name is %s, index_name is blank or attribute_name is blank", name());
 //     return RC::INVALID_ARGUMENT;
 //   }
-
 //   IndexMeta new_index_meta;
 //   RC rc = new_index_meta.init(index_name, *field_meta);
 //   if (rc != RC::SUCCESS) {
@@ -444,7 +447,6 @@ RC Table::get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly
 //              name(), index_name, field_meta->name());
 //     return rc;
 //   }
-
 //   // 创建索引相关数据
 //   BplusTreeIndex *index = new BplusTreeIndex();
 //   std::string index_file = table_index_file(base_dir_.c_str(), name(), index_name);
@@ -454,7 +456,6 @@ RC Table::get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly
 //     LOG_ERROR("Failed to create bplus tree index. file name=%s, rc=%d:%s", index_file.c_str(), rc, strrc(rc));
 //     return rc;
 //   }
-
 //   // 遍历当前的所有数据，插入这个索引
 //   RecordFileScanner scanner;
 //   rc = get_record_scanner(scanner, trx, true/*readonly*/);
@@ -463,7 +464,6 @@ RC Table::get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly
 //              name(), index_name, strrc(rc));
 //     return rc;
 //   }
-
 //   Record record;
 //   while (scanner.has_next()) {
 //     rc = scanner.next(record);
@@ -481,9 +481,7 @@ RC Table::get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly
 //   }
 //   scanner.close_scan();
 //   LOG_INFO("inserted all records into new index. table=%s, index=%s", name(), index_name);
-  
 //   indexes_.push_back(index);
-
 //   /// 接下来将这个索引放到表的元数据中
 //   TableMeta new_table_meta(table_meta_);
 //   rc = new_table_meta.add_index(new_index_meta);
@@ -491,7 +489,6 @@ RC Table::get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly
 //     LOG_ERROR("Failed to add index (%s) on table (%s). error=%d:%s", index_name, name(), rc, strrc(rc));
 //     return rc;
 //   }
-
 //   /// 内存中有一份元数据，磁盘文件也有一份元数据。修改磁盘文件时，先创建一个临时文件，写入完成后再rename为正式文件
 //   /// 这样可以防止文件内容不完整
 //   // 创建元数据临时文件
@@ -507,7 +504,6 @@ RC Table::get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly
 //     return RC::IOERR_WRITE;
 //   }
 //   fs.close();
-
 //   // 覆盖原始元数据文件
 //   std::string meta_file = table_meta_file(base_dir_.c_str(), name());
 //   int ret = rename(tmp_file.c_str(), meta_file.c_str());
@@ -517,9 +513,7 @@ RC Table::get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly
 //               tmp_file.c_str(), meta_file.c_str(), index_name, name(), errno, strerror(errno));
 //     return RC::IOERR_WRITE;
 //   }
-
 //   table_meta_.swap(new_table_meta);
-
 //   LOG_INFO("Successfully added a new index (%s) on the table (%s)", index_name, name());
 //   return rc;
 // }

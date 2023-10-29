@@ -1486,7 +1486,7 @@ RC BplusTreeHandler::insert_entry(const char *user_key, const RID *rid)
     return RC::INVALID_ARGUMENT;
   }
 
-  // TODO how to support multi-index
+  // to support multi-index
   int pos = 0;
   char *fixed_user_key = (char *)mem_pool_item_->alloc();
   for (int i = 0; i < file_header_.attr_type.size(); i++) {

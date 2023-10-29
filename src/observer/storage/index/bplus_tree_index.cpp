@@ -29,9 +29,7 @@ BplusTreeIndex::~BplusTreeIndex() noexcept
 //         index_meta.field());
 //     return RC::RECORD_OPENNED;
 //   }
-
 //   Index::init(index_meta, field_meta);
-
 //   RC rc = index_handler_.create(file_name, field_meta.type(), field_meta.len());
 //   if (RC::SUCCESS != rc) {
 //     LOG_WARN("Failed to create index_handler, file_name:%s, index:%s, field:%s, rc:%s",
@@ -41,7 +39,6 @@ BplusTreeIndex::~BplusTreeIndex() noexcept
 //         strrc(rc));
 //     return rc;
 //   }
-
 //   inited_ = true;
 //   LOG_INFO(
 //       "Successfully create index, file_name:%s, index:%s, field:%s", file_name, index_meta.name(), index_meta.field());
@@ -93,9 +90,7 @@ RC BplusTreeIndex::create(const char *file_name, const IndexMeta &index_meta, st
 //         index_meta.field());
 //     return RC::RECORD_OPENNED;
 //   }
-
 //   Index::init(index_meta, field_meta);
-
 //   RC rc = index_handler_.open(file_name);
 //   if (RC::SUCCESS != rc) {
 //     LOG_WARN("Failed to open index_handler, file_name:%s, index:%s, field:%s, rc:%s",
@@ -105,7 +100,6 @@ RC BplusTreeIndex::create(const char *file_name, const IndexMeta &index_meta, st
 //         strrc(rc));
 //     return rc;
 //   }
-
 //   inited_ = true;
 //   LOG_INFO(
 //       "Successfully open index, file_name:%s, index:%s, field:%s", file_name, index_meta.name(), index_meta.field());
@@ -154,13 +148,11 @@ RC BplusTreeIndex::close()
 RC BplusTreeIndex::insert_entry(const char *record, const RID *rid)
 {
   // return index_handler_.insert_entry(record + field_meta_.offset(), rid);
-
   // int offset__ = 0;
   // for(int i=0; i<field_meta_.size(); i++){
   //   offset__ += field_meta_[i]->offset();
   // }
   // return index_handler_.insert_entry(record + offset__, rid);
-
   // return index_handler_.insert_entry(record + field_meta_[0]->offset(), rid);
   return index_handler_.insert_entry(record, rid);
 }

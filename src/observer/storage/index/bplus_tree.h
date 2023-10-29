@@ -139,10 +139,13 @@ public:
 
 
       result = (*attr_comparator_[i])(v1 + pos, v2 + pos);
-      if (unique_ || result != 0) {
+      if (result != 0) {
         return result;
       }
       pos += attr_comparator_[i]->attr_length();
+    }
+    if (unique_){
+      return result;
     }
 
     int sum_len = 0;
