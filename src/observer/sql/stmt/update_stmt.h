@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/filter_stmt.h"
 
 class Table;
+class Expression;
 
 /**
  * @brief 更新语句
@@ -28,7 +29,9 @@ class UpdateStmt : public Stmt
 {
 public:
   UpdateStmt() = default;
-  UpdateStmt(Table *table, std::vector<std::string> attribute_name, std::vector<Value> values, int value_amount, FilterStmt *filter_stmt);
+  // UpdateStmt(Table *table, std::vector<std::string> attribute_name, std::vector<Value> values, int value_amount, FilterStmt *filter_stmt);
+  UpdateStmt(Table *table, std::vector<std::string> &attribute_name, std::vector<Expression *> &exprs, 
+    std::vector<const FieldMeta *> &fields, int value_amount, FilterStmt *filter_stmt);
 
   StmtType type() const override
   {
@@ -36,20 +39,25 @@ public:
   }
 
 public:
-  static RC create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt);
+  // static RC create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt);
+  static RC create(Db *db, UpdateSqlNode &update_sql, Stmt *&stmt);
 
 public:
   Table *table() const
   {
     return table_;
   }
-  std::vector<std::string> attribute_name() const
+  std::vector<std::string> &attribute_name()
   {
     return attribute_name_;
   }
-  std::vector<Value> values() const
+  // std::vector<Value> values() const
+  // {
+  //   return values_;
+  // }
+  std::vector<Expression *> &exprs()
   {
-    return values_;
+    return exprs_;
   }
   int value_amount() const
   {
@@ -60,10 +68,14 @@ public:
     return filter_stmt_;
   }
 
+public:
+  std::vector<const FieldMeta *> fields_;       // 把要更新的字段类型保存下来，后面在operator中就不用再判断了
+
 private:
   Table *table_ = nullptr;
   std::vector<std::string> attribute_name_;    // support update multi field
-  std::vector<Value> values_;
+  // std::vector<Value> values_;
+  std::vector<Expression *> exprs_;
   int value_amount_ = 0;
   FilterStmt *filter_stmt_ = nullptr;
 };

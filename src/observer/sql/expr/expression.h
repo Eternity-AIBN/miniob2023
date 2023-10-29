@@ -23,6 +23,8 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 
 class Tuple;
+class SelectStmt;
+class ProjectOperator;
 
 /**
  * @defgroup Expression
@@ -43,6 +45,7 @@ enum class ExprType
   COMPARISON,   ///< 需要做比较的表达式
   CONJUNCTION,  ///< 多个表达式使用同一种关系(AND或OR)来联结
   ARITHMETIC,   ///< 算术运算
+  SUBQUERY,     ///< 子查询
 };
 
 /**
@@ -154,7 +157,8 @@ public:
 
   const Value &get_value() const { return value_; }
 
-private:
+// private:
+public:
   Value value_;
 };
 
@@ -303,3 +307,56 @@ private:
   std::unique_ptr<Expression> left_;
   std::unique_ptr<Expression> right_;
 };
+
+
+/**
+ * @brief 子查询表达式
+ * @ingroup Expression
+ */
+// class SubQueryExpression : public Expression {
+// public:
+//   SubQueryExpression() = default;
+//   virtual ~SubQueryExpression() = default;
+
+//   ExprType type() const override
+//   {
+//     return ExprType::SUBQUERY;
+//   }
+
+//   void to_string(std::ostream &os) const override
+//   {}
+
+//   RC get_value(const Tuple &tuple, TupleCell &final_cell) const override;
+
+//   RC get_value(TupleCell &final_cell) const;
+
+//   void set_sub_query_stmt(SelectStmt *sub_stmt)
+//   {
+//     sub_stmt_ = sub_stmt;
+//   }
+
+//   SelectStmt *get_sub_query_stmt() const
+//   {
+//     return sub_stmt_;
+//   }
+
+//   void set_sub_query_top_oper(ProjectOperator *oper)
+//   {
+//     sub_top_oper_ = oper;
+//   }
+
+//   ProjectOperator *get_sub_query_top_oper() const
+//   {
+//     return sub_top_oper_;
+//   }
+
+//   RC open_sub_query() const;
+//   RC close_sub_query() const;
+
+//   static RC create_expression(const Expr *expr, const std::unordered_map<std::string, Table *> &table_map,
+//       const std::vector<Table *> &tables, Expression *&res_expr, CompOp comp = NO_OP, Db *db = nullptr);
+
+// private:
+//   SelectStmt *sub_stmt_ = nullptr;
+//   ProjectOperator *sub_top_oper_ = nullptr;
+// };

@@ -25,6 +25,11 @@ typedef struct AttributeAndName {
   std::vector<Value> value;
 } AttributeAndName;
 
+typedef struct AttributeAndExpr {
+  std::vector<std::string> attribute_name;
+  std::vector<Expression *> exprs;
+} AttributeAndExpr;
+
 string token_name(const char *sql_string, YYLTYPE *llocp)
 {
   return string(sql_string + llocp->first_column, llocp->last_column - llocp->first_column + 1);
@@ -138,7 +143,9 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   std::vector<std::string> *        relation_list;
   std::vector<std::string> *        id_lists;
   struct TableAndCondition *        table_and_condition;
-  struct AttributeAndName *         attribute_and_name;
+  // struct AttributeAndName *         attribute_and_name;
+  struct AttributeAndExpr *         attribute_and_expr;
+  Expression *                      sub_select;
   char *                            string;
   int                               number;
   float                             floats;
@@ -173,7 +180,9 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <id_lists>            id_list
 %type <condition_list>      inner_join_conditions
 %type <table_and_condition> rel_list_join
-%type <attribute_and_name>  update_list
+// %type <attribute_and_name>  update_list
+%type <attribute_and_expr>  update_list
+%type <sub_select>          sub_select
 %type <rel_attr_list>       attr_list
 %type <agg_rel_attr_list>   agg_attr_list
 %type <expression>          expression
@@ -479,21 +488,42 @@ delete_stmt:    /*  delete 语句的语法解析树*/
     }
     ;
 update_stmt:      /*  update 语句的语法解析树*/
-    UPDATE ID SET ID EQ value update_list where 
+    // UPDATE ID SET ID EQ value update_list where 
+    // {
+    //   $$ = new ParsedSqlNode(SCF_UPDATE);
+    //   $$->update.relation_name = $2;
+    //   // $$->update.attribute_name = $4;
+    //   if ($7 != nullptr) {
+    //     $$->update.attribute_name.swap($7->attribute_name);
+    //     $$->update.value.swap($7->value);
+    //     delete $7;
+    //   }
+    //   $$->update.attribute_name.push_back($4);
+    //   std::reverse($$->update.attribute_name.begin(), $$->update.attribute_name.end());
+    //   // $$->update.value = *$6;
+    //   $$->update.value.push_back(*$6);
+    //   std::reverse($$->update.value.begin(), $$->update.value.end());
+
+    //   if ($8 != nullptr) {
+    //     $$->update.conditions.swap(*$8);
+    //     delete $8;
+    //   }
+    //   free($2);
+    //   free($4);
+    // }
+    UPDATE ID SET ID EQ sub_select update_list where 
     {
       $$ = new ParsedSqlNode(SCF_UPDATE);
       $$->update.relation_name = $2;
-      // $$->update.attribute_name = $4;
       if ($7 != nullptr) {
         $$->update.attribute_name.swap($7->attribute_name);
-        $$->update.value.swap($7->value);
+        $$->update.exprs.swap($7->exprs);
         delete $7;
       }
       $$->update.attribute_name.push_back($4);
       std::reverse($$->update.attribute_name.begin(), $$->update.attribute_name.end());
-      // $$->update.value = *$6;
-      $$->update.value.push_back(*$6);
-      std::reverse($$->update.value.begin(), $$->update.value.end());
+      $$->update.exprs.emplace_back($6);
+      std::reverse($$->update.exprs.begin(), $$->update.exprs.end());
 
       if ($8 != nullptr) {
         $$->update.conditions.swap(*$8);
@@ -509,17 +539,76 @@ update_list:
     {
       $$ = nullptr;
     }
-    | COMMA ID EQ value update_list {
+    | COMMA ID EQ sub_select update_list {
       if ($5 != nullptr) {
         $$ = $5;
       } else {
-        $$ = new AttributeAndName;
+        $$ = new AttributeAndExpr;
       }
       $$->attribute_name.push_back($2);
-      $$->value.push_back(*$4);
+      $$->exprs.emplace_back($4);
       free($2);
     }
+    // | COMMA ID EQ value update_list {
+    //   if ($5 != nullptr) {
+    //     $$ = $5;
+    //   } else {
+    //     $$ = new AttributeAndName;
+    //   }
+    //   $$->attribute_name.push_back($2);
+    //   $$->value.push_back(*$4);
+    //   free($2);
+    // }
     ;
+
+sub_select:
+    value {
+      $$ = new ValueExpr(*$1);
+      $$->set_name(token_name(sql_string, &@$));
+      delete $1;
+    }
+    ;
+//     SELECT rel_attr FROM ID where
+//     {
+//       $$ = new ParsedSqlNode(SCF_SELECT);
+//       if ($2 != nullptr) {
+//         $$->selection.attributes.swap(*$2);
+//         delete $2;
+//       }
+//       if ($5 != nullptr) {
+//         $$->selection.relations.swap(*$5);
+//         delete $5;
+//       }
+//       $$->selection.relations.push_back($4);
+//       std::reverse($$->selection.relations.begin(), $$->selection.relations.end());
+
+//       if ($6 != nullptr) {
+//         $$->selection.conditions.swap(*$6);
+//         delete $6;
+//       }
+//       free($4);
+//     }
+//     | SELECT agg_rel_attr FROM ID where
+//     {
+//       $$ = new ParsedSqlNode(SCF_SELECT_AGG);
+//       if ($2 != nullptr) {
+//         $$->selection_agg.agg_attributes.swap(*$2);
+//         delete $2;
+//       }
+//       if ($5 != nullptr) {
+//         $$->selection_agg.relations.swap(*$5);
+//         delete $5;
+//       }
+//       $$->selection_agg.relations.push_back($4);
+//       std::reverse($$->selection_agg.relations.begin(), $$->selection_agg.relations.end());
+
+//       if ($6 != nullptr) {
+//         $$->selection_agg.conditions.swap(*$6);
+//         delete $6;
+//       }
+//       free($4);
+//     }
+//     ;
 
 select_stmt:        /*  select 语句的语法解析树*/
     SELECT select_attr FROM ID rel_list where

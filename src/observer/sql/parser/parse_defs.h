@@ -171,7 +171,8 @@ struct UpdateSqlNode
 {
   std::string                   relation_name;         ///< Relation to update
   std::vector<std::string>      attribute_name;        ///< 更新的字段，支持多个字段
-  std::vector<Value>            value;                 ///< 更新的值，支持多个字段
+  // std::vector<Value>            value;                 ///< 更新的值，支持多个字段
+  std::vector<Expression *>     exprs;            ///< update-select时，更新的值由子查询获得，看成表达式，实际上value也是ValueExpr，可以删掉，不删也可以使用之前的那套逻辑，先不管了
   std::vector<ConditionSqlNode> conditions;
 };
 

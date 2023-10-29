@@ -17,20 +17,24 @@ See the Mulan PSL v2 for more details. */
 #include "storage/db/db.h"
 #include "storage/table/table.h"
 
-UpdateStmt::UpdateStmt(Table *table, std::vector<std::string> attribute_name, std::vector<Value> values, int value_amount, FilterStmt *filter_stmt)
-    : table_(table), value_amount_(value_amount), filter_stmt_(filter_stmt)
-{
-  // attribute_name_(attribute_name), values_(values), 向量不能直接=
-  for(int i=0; i<attribute_name.size(); i++){
-    std::string *tmp_string = new std::string(attribute_name[i].c_str());
-    attribute_name_.push_back(*tmp_string);
+// UpdateStmt::UpdateStmt(Table *table, std::vector<std::string> attribute_name, std::vector<Value> values, int value_amount, FilterStmt *filter_stmt)
+//     : table_(table), value_amount_(value_amount), filter_stmt_(filter_stmt)
+// {
+//   // attribute_name_(attribute_name), values_(values), 向量不能直接=
+//   for(int i=0; i<attribute_name.size(); i++){
+//     std::string *tmp_string = new std::string(attribute_name[i].c_str());
+//     attribute_name_.push_back(*tmp_string);
 
-    Value *tmp_value = new Value(values[i].attr_type(), values[i].get_data(), values[i].length());
-    values_.push_back(*tmp_value);
-  }
-}
+//     Value *tmp_value = new Value(values[i].attr_type(), values[i].get_data(), values[i].length());
+//     values_.push_back(*tmp_value);
+//   }
+// }
+UpdateStmt::UpdateStmt(Table *table, std::vector<std::string> &attribute_name, std::vector<Expression *> &exprs, std::vector<const FieldMeta *> &fields, int value_amount, FilterStmt *filter_stmt)
+    : table_(table), attribute_name_(attribute_name), exprs_(exprs), fields_(fields), value_amount_(value_amount), filter_stmt_(filter_stmt)
+{}
 
-RC UpdateStmt::create(Db *db, const UpdateSqlNode &update, Stmt *&stmt)
+// RC UpdateStmt::create(Db *db, const UpdateSqlNode &update, Stmt *&stmt)
+RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
 {
   const char *table_name = update.relation_name.c_str();
   if (nullptr == db || nullptr == table_name || update.attribute_name.empty()) {
@@ -46,9 +50,11 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update, Stmt *&stmt)
     return RC::SCHEMA_TABLE_NOT_EXIST;
   }
 
-  std::vector<Value> new_values;
+  // std::vector<Value> new_values;
+  std::vector<Expression *> expressions;
+  std::vector<const FieldMeta *> fields;
   for (int k=0; k<update.attribute_name.size(); k++){
-    Value *values = new Value(update.value[k].attr_type(), const_cast<char *>(update.value[k].data()), update.value[k].length());
+    // Value *values = new Value(update.value[k].attr_type(), const_cast<char *>(update.value[k].data()), update.value[k].length());
     const TableMeta &table_meta = table->table_meta();
     const int field_num = table_meta.field_num() - table_meta.sys_field_num();
     
@@ -59,17 +65,30 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update, Stmt *&stmt)
       const FieldMeta *field_meta = table_meta.field(i + sys_field_num);
       const std::string field_name = field_meta->name();
       if (field_name == update.attribute_name[k]) {  
-        if (field_meta->type() == DATES){   // 日期列的更新，传入的update.value通常是"1999-02-01"，会被当成CHARS类型，需要转换为DATES类型
-          int32_t date = -1;
-          RC rc = string_to_date(values->get_string(), date);
-          if (rc != RC::SUCCESS){
-            LOG_WARN("field_type is date error");
-            return rc;
-          }
-          values->set_date(date);
-        }
+        // 不止Date和char的转换；并且update-select中子查询的value值在后续operator中才获取，所以把类型转换统一放到operator中进行
+        // if (field_meta->type() == DATES){   // 日期列的更新，传入的update.value通常是"1999-02-01"，会被当成CHARS类型，需要转换为DATES类型
+        //   int32_t date = -1;
+        //   RC rc = string_to_date(update.exprs[k]->value_->get_string(), date);
+        //   if (rc != RC::SUCCESS){
+        //     LOG_WARN("field_type is date error");
+        //     return rc;
+        //   }
+        //   values->set_date(date);
+        // }
         flag = true;
-        new_values.push_back(*values);
+        // new_values.push_back(*values);
+        // TODO 在这里构造expr
+        Expression *expression = nullptr;
+        const std::unordered_map<std::string, Table *> table_map;
+        const std::vector<Table *> tables;
+        if (ExprType::VALUE == update.exprs[k]->type()) {
+          // Value *tmp = ((ValueExpr *)(update.exprs[k]))->get_value();
+          expression = new ValueExpr(((ValueExpr *)(update.exprs[k]))->get_value());
+        }
+
+        assert(nullptr != expression);
+        expressions.emplace_back(expression);
+        fields.emplace_back(field_meta);
         break;
       }
     }
@@ -90,6 +109,7 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update, Stmt *&stmt)
     LOG_WARN("failed to create filter statement. rc=%d:%s", rc, strrc(rc));
     return rc;
   }
-  stmt = new UpdateStmt(table, update.attribute_name, new_values, update.attribute_name.size(), filter_stmt);
+  // stmt = new UpdateStmt(table, update.attribute_name, new_values, update.attribute_name.size(), filter_stmt);
+  stmt = new UpdateStmt(table, update.attribute_name, expressions, fields, update.attribute_name.size(), filter_stmt);
   return RC::SUCCESS;
 }
