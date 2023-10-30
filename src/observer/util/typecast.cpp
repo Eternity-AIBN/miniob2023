@@ -9,6 +9,7 @@ cast_func_ptr cast_to[AttrType::BOOLEANS + 1][AttrType::BOOLEANS + 1] = {{
                                                                          not_support,
                                                                          not_support,
                                                                          not_support,
+                                                                         not_support,
                                                                      },
     {
         // CHARS
@@ -16,6 +17,7 @@ cast_func_ptr cast_to[AttrType::BOOLEANS + 1][AttrType::BOOLEANS + 1] = {{
         char_to_char,
         char_to_int,
         char_to_float,
+        not_support,
         not_support,
         not_support,
     },
@@ -27,6 +29,7 @@ cast_func_ptr cast_to[AttrType::BOOLEANS + 1][AttrType::BOOLEANS + 1] = {{
         int_to_float,
         not_support,
         not_support,
+        not_support,
     },
     {
         // FLOATS
@@ -34,6 +37,7 @@ cast_func_ptr cast_to[AttrType::BOOLEANS + 1][AttrType::BOOLEANS + 1] = {{
         float_to_char,
         float_to_int,
         float_to_float,
+        not_support,
         not_support,
         not_support,
     },
@@ -45,9 +49,21 @@ cast_func_ptr cast_to[AttrType::BOOLEANS + 1][AttrType::BOOLEANS + 1] = {{
         not_support,
         not_support,
         not_support,
+        not_support,
     },
     {
         // NULLS
+        not_support,
+        not_support,
+        not_support,
+        not_support,
+        not_support,
+        not_support,
+        not_support,
+    },
+    {
+        // BOOLEANS
+        not_support,
         not_support,
         not_support,
         not_support,

@@ -20,7 +20,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/string.h"
 #include "util/typecast.h"
 
-const char *ATTR_TYPE_NAME[] = {"undefined", "chars", "ints", "floats", "dates", "booleans"};
+const char *ATTR_TYPE_NAME[] = {"undefined", "chars", "ints", "floats", "dates", "nulls", "booleans"};
 
 const char *attr_type_to_string(AttrType type)
 {
@@ -80,6 +80,9 @@ void Value::set_data(char *data, int length)
     case DATES: {
       num_value_.date_value_ = *(int *)data;
       length_ = length;
+    } break;
+    case NULLS: {
+      // 需要个变量初始化为nullptr？
     } break;
     default: {
       LOG_WARN("unknown data type: %d", attr_type_);
@@ -143,6 +146,10 @@ void Value::set_value(const Value &value)
     case DATES: {
       set_date(value.get_int());
     } break;
+    case NULLS: {
+      attr_type_ = NULLS;
+      // 需要个变量初始化为nullptr？
+    } break;
     case UNDEFINED: {
       ASSERT(false, "got an invalid value type");
     } break;
@@ -155,9 +162,9 @@ const char *Value::data() const
     case CHARS: {
       return str_value_.c_str();
     } break;
-    // case DATES: {
-    //   return str_value_.c_str();
-    // } break;
+    case NULLS: {
+      return nullptr;
+    } break;
     default: {
       return (const char *)&num_value_;
     } break;
@@ -170,9 +177,9 @@ char *Value::get_data()
     case CHARS: {
       return (char*)str_value_.c_str();
     } break;
-    // case DATES: {
-    //   return str_value_.c_str();
-    // } break;
+    case NULLS: {
+      return nullptr;
+    } break;
     default: {
       return (char *)&num_value_;
     } break;
@@ -202,6 +209,9 @@ std::string Value::to_string() const
       snprintf(buf,sizeof(buf),"%04d-%02d-%02d", num_value_.date_value_/10000, (num_value_.date_value_%10000)/100, num_value_.date_value_%100);
       return buf;
     } break;
+    case NULLS: {
+      os << "NULL";
+    } break;
     default: {
       LOG_WARN("unsupported attr type: %d", attr_type_);
     } break;
@@ -211,6 +221,9 @@ std::string Value::to_string() const
 
 int Value::compare(const Value &other) const
 {
+  // if (this->attr_type_ == NULLS || other.attr_type_ == NULLS){
+  //   // 不在这里处理，在调用到这个函数的地方，null与任何值比较都是false
+  // }
   if (this->attr_type_ == other.attr_type_) {
     switch (this->attr_type_) {
       case INTS: {
@@ -303,6 +316,9 @@ int Value::get_int() const
     case DATES: {
       return num_value_.date_value_;
     }
+    case NULLS: {
+      return 0;
+    } break;
     default: {
       LOG_WARN("unknown data type. type=%d", attr_type_);
       return 0;
@@ -333,6 +349,9 @@ float Value::get_float() const
     } break;
     case DATES: {
       return float(num_value_.date_value_);
+    } break;
+    case NULLS: {
+      return 0;
     } break;
     default: {
       LOG_WARN("unknown data type. type=%d", attr_type_);
@@ -380,6 +399,9 @@ bool Value::get_boolean() const
     } break;
     case DATES: {
       return num_value_.date_value_ != 0;
+    } break;
+    case NULLS: {
+      return false;
     } break;
     default: {
       LOG_WARN("unknown data type. type=%d", attr_type_);

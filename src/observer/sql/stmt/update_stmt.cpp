@@ -56,7 +56,7 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
   for (int k=0; k<update.attribute_name.size(); k++){
     // Value *values = new Value(update.value[k].attr_type(), const_cast<char *>(update.value[k].data()), update.value[k].length());
     const TableMeta &table_meta = table->table_meta();
-    const int field_num = table_meta.field_num() - table_meta.sys_field_num();
+    const int field_num = table_meta.field_num() - table_meta.sys_field_num() - 1;
     
     // check fields type
     bool flag = false;    // 要更新的字段是否存在 

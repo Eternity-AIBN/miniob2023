@@ -94,6 +94,12 @@ ComparisonExpr::~ComparisonExpr()
 RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &result) const
 {
   RC rc = RC::SUCCESS;
+  // Add NULL compare
+  if (left.attr_type() == NULLS || right.attr_type() == NULLS){
+    result = false;
+    return rc;
+  }
+
   if(comp_ == LIKE_TO){
       int cmp_result = left.like(right);
       result = (1 == cmp_result);

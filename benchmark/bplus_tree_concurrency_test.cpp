@@ -72,7 +72,7 @@ public:
     const char *filename = btree_filename.c_str();
 
     // RC rc = handler_.create(filename, INTS, sizeof(int32_t) /*attr_len*/, internal_max_size, leaf_max_size);
-    FieldMeta *filedmeta = new FieldMeta("test", INTS, 0, sizeof(int32_t), 0);
+    FieldMeta *filedmeta = new FieldMeta("test", INTS, 0, sizeof(int32_t), 0, 0, 0);
     std::vector<FieldMeta *> tmp;
     tmp.push_back(filedmeta);
     RC rc = handler_.create(filename, tmp, internal_max_size, leaf_max_size);

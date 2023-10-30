@@ -332,7 +332,8 @@ TEST(test_bplus_tree, test_leaf_index_node_handle)
 
   KeyComparator key_comparator;
   // key_comparator.init(INTS, 4);
-  key_comparator.init(*tmp2, *tmp, false);
+  std::vector<int32_t> *tmp_attr_id = new std::vector<int32_t>(1, 0);
+  key_comparator.init(*tmp2, *tmp, false, *tmp_attr_id);
 
   LeafIndexNodeHandler leaf_node(index_file_header, &frame);
   leaf_node.init_empty();
@@ -395,7 +396,8 @@ TEST(test_bplus_tree, test_internal_index_node_handle)
   Frame frame;
 
   KeyComparator key_comparator;
-  key_comparator.init(*tmp2, *tmp, false);
+  std::vector<int32_t> *tmp_attr_id = new std::vector<int32_t>(1, 0);
+  key_comparator.init(*tmp2, *tmp, false, *tmp_attr_id);
 
   InternalIndexNodeHandler internal_node(index_file_header, &frame);
   internal_node.init_empty();
@@ -486,7 +488,7 @@ TEST(test_bplus_tree, test_chars)
   ::remove(index_name);
   handler = new BplusTreeHandler();
   // handler->create(index_name, CHARS, 8, ORDER, ORDER);
-  FieldMeta *filedmeta = new FieldMeta("test", CHARS, 0, 8, 0);
+  FieldMeta *filedmeta = new FieldMeta("test", CHARS, 0, 8, 0, 0, 0);
   std::vector<FieldMeta *> tmp;
   tmp.push_back(filedmeta);
   handler->create(index_name, tmp, ORDER, ORDER);
@@ -533,7 +535,7 @@ TEST(test_bplus_tree, test_scanner)
   ::remove(index_name);
   handler = new BplusTreeHandler();
   // handler->create(index_name, INTS, sizeof(int), ORDER, ORDER);
-  FieldMeta *filedmeta = new FieldMeta("test", INTS, 0, sizeof(int), 0);
+  FieldMeta *filedmeta = new FieldMeta("test", INTS, 0, sizeof(int), 0, 0, 0);
   std::vector<FieldMeta *> tmp;
   tmp.push_back(filedmeta);
   handler->create(index_name, tmp, ORDER, ORDER);
@@ -746,7 +748,7 @@ TEST(test_bplus_tree, test_bplus_tree_insert)
   ::remove(index_name);
   handler = new BplusTreeHandler();
   // handler->create(index_name, INTS, sizeof(int), ORDER, ORDER);
-  FieldMeta *filedmeta = new FieldMeta("test", INTS, 0, sizeof(int), 0);
+  FieldMeta *filedmeta = new FieldMeta("test", INTS, 0, sizeof(int), 0, 0, 0);
   std::vector<FieldMeta *> tmp;
   tmp.push_back(filedmeta);
   handler->create(index_name, tmp, ORDER, ORDER);

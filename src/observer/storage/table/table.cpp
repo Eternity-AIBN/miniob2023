@@ -237,9 +237,7 @@ RC Table::open(const char *meta_file, const char *base_dir)
   const int index_num = table_meta_.index_num();
   for (int i = 0; i < index_num; i++) {
     const IndexMeta *index_meta = table_meta_.index(i);
-    // const FieldMeta *field_meta = table_meta_.field(index_meta->field());
     std::vector<FieldMeta *> *field_meta = table_meta_.field(index_meta->field());
-    // if (field_meta == nullptr) {
     if (field_meta->size() == 0) {
       LOG_ERROR("Found invalid index meta info which has a non-exists field. table=%s, index=%s, field_nums=%s",
                 name(), index_meta->name(), index_meta->field().size());
@@ -250,7 +248,6 @@ RC Table::open(const char *meta_file, const char *base_dir)
 
     BplusTreeIndex *index = new BplusTreeIndex();
     std::string index_file = table_index_file(base_dir, name(), index_meta->name());
-    // rc = index->open(index_file.c_str(), *index_meta, *field_meta);
     rc = index->open(index_file.c_str(), *index_meta, *field_meta);
     if (rc != RC::SUCCESS) {
       delete index;
@@ -364,21 +361,21 @@ TableMeta &Table::table_meta()
 RC Table::make_record(int value_num, const Value *values, Record &record)
 {
   // 检查字段类型是否一致
-  if (value_num + table_meta_.sys_field_num() != table_meta_.field_num()) {
+  if (value_num + table_meta_.sys_field_num() != table_meta_.field_num() - 1) {
     LOG_WARN("Input values don't match the table's schema, table name:%s", table_meta_.name());
     return RC::SCHEMA_FIELD_MISSING;
   }
 
   const int normal_field_start_index = table_meta_.sys_field_num();
-  for (int i = 0; i < value_num; i++) {
-    const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
-    const Value &value = values[i];
-    if (field->type() != value.attr_type()) {
-      LOG_ERROR("Invalid value type. table name =%s, field name=%s, type=%d, but given=%d",
-                table_meta_.name(), field->name(), field->type(), value.attr_type());
-      return RC::SCHEMA_FIELD_TYPE_MISMATCH;
-    }
-  }
+  // for (int i = 0; i < value_num; i++) {
+  //   const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
+  //   const Value &value = values[i];
+  //   if (field->type() != value.attr_type()) {
+  //     LOG_ERROR("Invalid value type. table name =%s, field name=%s, type=%d, but given=%d",
+  //               table_meta_.name(), field->name(), field->type(), value.attr_type());
+  //     return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+  //   }
+  // }
 
   // 复制所有字段的值
   int record_size = table_meta_.record_size();
@@ -387,6 +384,26 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
   for (int i = 0; i < value_num; i++) {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value &value = values[i];
+
+    // TODO 添加NULL值的处理
+    const FieldMeta *null_field = table_meta_.null_bitmap_field();    // 这是在所有field之后的一段空间，NULL值设置这里就行，前面的所有field正常弄成0
+    common::Bitmap bitmap(record_data + null_field->offset(), null_field->len());
+    if (AttrType::NULLS == value.attr_type()) {
+      if (!field->nullable()) {
+        LOG_ERROR("Invalid value type. Cannot be null. table name =%s, field name=%s, type=%d, but given=%d",
+            table_meta_.name(),
+            field->name(),
+            field->type(),
+            value.attr_type());
+        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+      }
+      bitmap.set_bit(i + normal_field_start_index);
+      // make sure data all zero bit
+      memset(record_data + field->offset(), 0, field->len());
+      continue;
+    }
+    bitmap.clear_bit(i + normal_field_start_index);   // 不是NULL，说明有具体值，需要把之前（可能）设置的NULL位复原
+
     size_t copy_len = field->len();
     if (field->type() == CHARS) {
       const size_t data_len = value.length();
@@ -532,6 +549,9 @@ RC Table::create_index(Trx *trx, std::vector<FieldMeta *> *field_meta, const cha
              name(), index_name, field_meta->size());
     return rc;
   }
+
+  // 将标记NULL的bitmap也作为索引的一个field————即index的最后一个field
+  field_meta->push_back(table_meta_.null_bitmap_field());
 
   // 创建索引相关数据
   BplusTreeIndex *index = new BplusTreeIndex();

@@ -48,6 +48,7 @@ public:
   // const FieldMeta *field(const char *name) const;
   FieldMeta *field(const char *name);
   std::vector<FieldMeta *> *field(std::vector<std::string> names);
+  FieldMeta *null_bitmap_field();
   const FieldMeta *find_field_by_offset(int offset) const;
   const std::vector<FieldMeta> *field_metas() const
   {

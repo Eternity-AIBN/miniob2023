@@ -112,6 +112,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         EXPLAIN
         LIKE
         NOT
+        NULLABLE
         EQ
         LT
         GT
@@ -418,6 +419,7 @@ attr_def:
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = $4;
+      $$->nullable = true;
       free($1);
     }
     | ID type
@@ -426,8 +428,45 @@ attr_def:
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = 4;
+      $$->nullable = true;
       free($1);
     }
+    | ID type LBRACE number RBRACE NULLABLE
+		{
+      $$ = new AttrInfoSqlNode;
+      $$->type = (AttrType)$2;
+      $$->name = $1;
+      $$->length = $4;
+      $$->nullable = true;
+      free($1);
+		}
+    | ID type LBRACE number RBRACE NOT NULLABLE
+		{
+      $$ = new AttrInfoSqlNode;
+      $$->type = (AttrType)$2;
+      $$->name = $1;
+      $$->length = $4;
+      $$->nullable = false;
+      free($1);
+		}
+    | ID type NULLABLE
+		{
+			$$ = new AttrInfoSqlNode;
+      $$->type = (AttrType)$2;
+      $$->name = $1;
+      $$->length = 4;
+      $$->nullable = true;
+      free($1);
+		}
+    | ID type NOT NULLABLE
+		{
+			$$ = new AttrInfoSqlNode;
+      $$->type = (AttrType)$2;
+      $$->name = $1;
+      $$->length = 4;
+      $$->nullable = false;
+      free($1);
+		}
     ;
 number:
     NUMBER {$$ = $1;}
@@ -486,6 +525,10 @@ value:
       char *tmp = common::substr($1,1,strlen($1)-2);
       $$ = new Value(tmp);
       free(tmp);
+    }
+    |NULLABLE {
+      $$ = new Value();
+      $$->set_type(AttrType::NULLS);
     }
     ;
     

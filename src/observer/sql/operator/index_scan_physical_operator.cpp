@@ -49,22 +49,47 @@ RC IndexScanPhysicalOperator::open(Trx *trx)
   // const char *right;
   int left_len = 0;
   int right_len = 0;
-  int value_len = 0;    
+  int value_len = 0;
+  int bitmap_len = table_->table_meta().null_bitmap_field()->len();    
   for (int i = 0; i < index_->index_meta().field().size(); i++) {
     string tmp = index_->index_meta().field()[i];
     const char *field_name = tmp.c_str();
     value_len += table_->table_meta().field(field_name)->len();
   }
 
-  char *left = new char[value_len];
-  char *right = new char[value_len];
-  int pos = 0;
-  // for (int i = 0; i < predicates_.size(); i++){
+  char *left = new char[value_len + bitmap_len];
+  char *right = new char[value_len + bitmap_len];
+
+  int tmp_length = 0;
   for (int i = predicates_.size()-1; i >=0 ; i--){
     ComparisonExpr* comparisonExpr = static_cast<ComparisonExpr *>(predicates_[i].get());
     ValueExpr* valueExpr = static_cast<ValueExpr *>(comparisonExpr->right().get());
     Value cur_value = valueExpr->get_value();
     if (nullptr != cur_value.data()) {
+      tmp_length += cur_value.length();
+    }
+  }
+  memcpy(left + tmp_length, 0, bitmap_len);
+  memcpy(right + tmp_length, 0, bitmap_len);
+  left_len += bitmap_len;
+  right_len += bitmap_len;
+
+  int pos = 0;
+  for (int i = predicates_.size()-1; i >=0 ; i--){
+    ComparisonExpr* comparisonExpr = static_cast<ComparisonExpr *>(predicates_[i].get());
+    ValueExpr* valueExpr = static_cast<ValueExpr *>(comparisonExpr->right().get());
+    Value cur_value = valueExpr->get_value();
+    if (nullptr != cur_value.data()) {
+      // set bitmap for null
+      common::Bitmap left_map(left + tmp_length, bitmap_len);
+      common::Bitmap right_map(right + tmp_length, bitmap_len);
+      if (cur_value.attr_type() == AttrType::NULLS) {
+        FieldExpr* fieldExpr = static_cast<FieldExpr *>(comparisonExpr->left().get());
+        int field_id = fieldExpr->field().meta()->id();
+        left_map.set_bit(field_id);
+        right_map.set_bit(field_id);
+      }
+
       memcpy(left + pos, cur_value.data(), cur_value.length());
       left_len += cur_value.length();
 
@@ -79,10 +104,11 @@ RC IndexScanPhysicalOperator::open(Trx *trx)
       right_len = value_len;
     }
   }
+
   // id和col1两列组合索引，如果查询条件只有id的情况
-  if(predicates_.size() != index_->index_meta().field().size()){
-    left[pos] = '\0';
-    right[pos] = '\0';
+  if(predicates_.size() != index_->index_meta().field().size()){    // index_meta().field().size() 是指组合索引有多少列，不包括bitmap
+    left[pos+bitmap_len] = '\0';
+    right[pos+bitmap_len] = '\0';
   }
 
   IndexScanner *index_scanner =

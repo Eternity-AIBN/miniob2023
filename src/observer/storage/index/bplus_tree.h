@@ -99,13 +99,16 @@ private:
 class KeyComparator 
 {
 public:
-  void init(std::vector<AttrType> type, std::vector<int> length, bool unique)
+  void init(std::vector<AttrType> type, std::vector<int> length, bool unique, std::vector<int> attr_id)
   {
     unique_ = unique;
     for (int i=0; i<type.size(); i++){
       AttrComparator *tmp = new AttrComparator;
       tmp->init(type[i], length[i]);
       attr_comparator_.push_back(tmp);
+
+      int tmp_id = attr_id[i];
+      attr_id_.push_back(tmp_id);
     }
   }
 
@@ -114,29 +117,36 @@ public:
     return attr_comparator_;
   }
 
-  // int operator()(const char *v1, const char *v2) const
-  // {
-  //   int result = attr_comparator_(v1, v2);
-  //   if (result != 0) {
-  //     return result;
-  //   }
-
-  //   const RID *rid1 = (const RID *)(v1 + attr_comparator_.attr_length());
-  //   const RID *rid2 = (const RID *)(v2 + attr_comparator_.attr_length());
-  //   return RID::compare(rid1, rid2);
-  // }
-  int operator()(const char *v1, const char *v2) const
+  int operator()(const char *v1, const char *v2, bool null_as_different = false) const
   {
     int result = 0;
     int pos = 0;
-    for(int i = 0; i < attr_comparator_.size(); i++){
-      if(v2[pos] == '\0'){
+
+    int tmp_length = 0;
+    for(int i = 0; i < attr_comparator_.size() - 1; i++){
+      tmp_length += attr_comparator_[i]->attr_length();
+    }
+    common::Bitmap null_bitmap1(const_cast<char *>(v1+tmp_length), attr_comparator_.back()->attr_length());
+    common::Bitmap null_bitmap2(const_cast<char *>(v2+tmp_length), attr_comparator_.back()->attr_length());
+
+
+    for(int i = 0; i < attr_comparator_.size() - 1; i++){     // -1 是因为最后一列为标记null的bitmap
+      if(v2[pos+attr_comparator_.back()->attr_length()] == '\0'){
         break;
       }
-      // int vv1 = *(int *)(v1 + pos);
-      // int vv2 = *(int *)(v2 + pos);
-      // printf("v1 = %d, v2 = %d\n", vv1, vv2);
 
+      if (null_bitmap2.get_bit(attr_id_[i])) {    // v2 此字段为null
+        if (null_as_different)  // 这里认为NULL比其它值(包括NULL)都小，返回1
+          return 1;
+        if (null_bitmap1.get_bit(attr_id_[i])) {    // v1、v2 此字段都是null
+          continue; 
+        } else {
+          return 1;  // 这里认为NULL比其它值(不包括NULL)都小，返回1
+        }
+      } else if (null_bitmap1.get_bit(attr_id_[i])) {   // v1 此字段为null
+        return -1;
+      }
+      
 
       result = (*attr_comparator_[i])(v1 + pos, v2 + pos);
       if (result != 0) {
@@ -162,6 +172,7 @@ private:
   // AttrComparator attr_comparator_;
   std::vector<AttrComparator *> attr_comparator_;
   bool unique_;
+  std::vector<int> attr_id_;
 };
 
 /**
@@ -250,7 +261,7 @@ public:
     std::stringstream ss;
     ss << "{key:" << (*attr_printer_[0])(v) << ",";
     int pos = attr_printer_[0]->attr_length();
-    for(int i = 1; i < attr_printer_.size(); i++){
+    for(int i = 1; i < attr_printer_.size()-1; i++){    // 最后一个是null值的bitmap
       ss << (*attr_printer_[0])(v + pos) << ",";
       pos += attr_printer_[i]->attr_length();
     }
@@ -286,7 +297,8 @@ struct IndexFileHeader
   std::vector<int32_t> attr_offset; 
   int32_t key_length;         ///< attr length + sizeof(RID)
   // AttrType attr_type;         ///< 键值的类型
-  std::vector<AttrType> attr_type;         ///< 键值的类型
+  std::vector<AttrType> attr_type;         ///< 键值的类型，最后一个是bitmap
+  std::vector<int>  attr_id;
 
   const std::string to_string()
   {
@@ -428,7 +440,7 @@ public:
    * 查找指定key的插入位置(注意不是key本身)
    * 如果key已经存在，会设置found的值。
    */
-  int lookup(const KeyComparator &comparator, const char *key, bool *found = nullptr) const;
+  int lookup(const KeyComparator &comparator, const char *key, bool *found = nullptr, bool insert_operation = false) const;
 
   void insert(int index, const char *key, const char *value);
   void remove(int index);

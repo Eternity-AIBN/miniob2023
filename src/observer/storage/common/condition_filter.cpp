@@ -140,6 +140,11 @@ bool DefaultConditionFilter::filter(const Record &rec) const
     right_value.set_value(right_.value);
   }
 
+  // Add NULL compare
+  if (left_value.attr_type() == NULLS || right_value.attr_type() == NULLS){
+    return false;
+  }
+
   if(comp_op_ == LIKE_TO){
       int cmp_result = left_value.like(right_value);
       if(exist_not_ == 1){
