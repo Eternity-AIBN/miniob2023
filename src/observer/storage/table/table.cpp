@@ -380,12 +380,13 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
   // 复制所有字段的值
   int record_size = table_meta_.record_size();
   char *record_data = (char *)malloc(record_size);
+  memset(record_data, 0, record_size);
 
   for (int i = 0; i < value_num; i++) {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value &value = values[i];
 
-    // TODO 添加NULL值的处理
+    // 添加NULL值的处理
     const FieldMeta *null_field = table_meta_.null_bitmap_field();    // 这是在所有field之后的一段空间，NULL值设置这里就行，前面的所有field正常弄成0
     common::Bitmap bitmap(record_data + null_field->offset(), null_field->len());
     if (AttrType::NULLS == value.attr_type()) {

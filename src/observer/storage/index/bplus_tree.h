@@ -131,7 +131,7 @@ public:
 
 
     for(int i = 0; i < attr_comparator_.size() - 1; i++){     // -1 是因为最后一列为标记null的bitmap
-      if(v2[pos+attr_comparator_.back()->attr_length()] == '\0'){
+      if(v2[pos+attr_comparator_.back()->attr_length()] == 1){
         break;
       }
 

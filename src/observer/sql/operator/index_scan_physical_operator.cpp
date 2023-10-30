@@ -107,8 +107,8 @@ RC IndexScanPhysicalOperator::open(Trx *trx)
 
   // id和col1两列组合索引，如果查询条件只有id的情况
   if(predicates_.size() != index_->index_meta().field().size()){    // index_meta().field().size() 是指组合索引有多少列，不包括bitmap
-    left[pos+bitmap_len] = '\0';
-    right[pos+bitmap_len] = '\0';
+    left[pos+bitmap_len] = 1;
+    right[pos+bitmap_len] = 1;
   }
 
   IndexScanner *index_scanner =
