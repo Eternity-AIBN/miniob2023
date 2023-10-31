@@ -46,6 +46,7 @@ Tuple *ProjectAggPhysicalOperator::current_tuple()
     std::vector<Value> max_res(num);
     std::vector<Value> min_res(num);
     std::vector<int> count_res(num);
+    std::vector<int> count_res_no_null(num);
     std::vector<Value> sum_res(num);
     std::vector<Value> avg_res(num);
     std::vector<AttrType> attr_type(num); //记录每一列的类型，主要区分是不是int，用于求sum的时候输出int/float
@@ -65,6 +66,7 @@ Tuple *ProjectAggPhysicalOperator::current_tuple()
           count_res[i] = 1;   // select count(*)
         }else{
           count_res[i] = 0;   // 如果是count(col)的话，NULL不统计，应该是0
+          count_res_no_null[i] = 0;
         }
         sum_res[i] = cell;
         attr_type[i] = cell.attr_type();
@@ -73,12 +75,12 @@ Tuple *ProjectAggPhysicalOperator::current_tuple()
         max_res[i] = cell;
         min_res[i] = cell;
         count_res[i] = 1;
+        count_res_no_null[i] = 1;
         sum_res[i].set_float(cell.get_float());
         attr_type[i] = cell.attr_type();
       }
     }
 
-    int row_nums = 1;   //统计一共有多少行，用于计算avg
     //获取后续元组
     while (RC::SUCCESS == (rc = next())) {   
       tuple_.set_tuple(children_[0]->current_tuple());
@@ -98,6 +100,7 @@ Tuple *ProjectAggPhysicalOperator::current_tuple()
             min_res[i] = cell;
           }
           count_res[i] += 1;     // select count(字段)?
+          count_res_no_null[i] += 1;
           if(sum_res[i].attr_type() == AttrType::NULLS){    
             sum_res[i].set_float(cell.get_float());
           } else {               // 已经有值了（不是NULL），直接相加
@@ -105,7 +108,6 @@ Tuple *ProjectAggPhysicalOperator::current_tuple()
           }
         }
       }
-      row_nums ++;
     }
 
     // 所有行的字段为NULL时则min/max/avg/sum结果为NULL
@@ -113,7 +115,7 @@ Tuple *ProjectAggPhysicalOperator::current_tuple()
       if(sum_res[i].attr_type() == AttrType::NULLS){  //  所有行的字段为NULL
         avg_res[i].set_type(AttrType::NULLS);
       } else {
-        avg_res[i].set_float(sum_res[i].get_float() / row_nums);
+        avg_res[i].set_float(sum_res[i].get_float() / count_res_no_null[i]);
       }
     }
     
