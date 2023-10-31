@@ -3009,7 +3009,7 @@ yyreduce:
       (yyval.condition)->left_attr = *(yyvsp[-2].rel_attr);
       // $$->comp = EQ;      // 虽然没用，但还是初始化一个避免后续filter_stmt判断出问题
       (yyval.condition)->is_null = true;
-      (yyval.condition)->exist_not = 0;
+      (yyval.condition)->exist_not = false;
 
       delete (yyvsp[-2].rel_attr);
     }
@@ -3024,7 +3024,7 @@ yyreduce:
       (yyval.condition)->left_value = *(yyvsp[-2].value);
       // $$->comp = EQ;
       (yyval.condition)->is_null = true;
-      (yyval.condition)->exist_not = 0;
+      (yyval.condition)->exist_not = false;
 
       delete (yyvsp[-2].value);
     }
@@ -3039,7 +3039,7 @@ yyreduce:
       (yyval.condition)->left_attr = *(yyvsp[-3].rel_attr);
       // $$->comp = EQ;
       (yyval.condition)->is_null = true;
-      (yyval.condition)->exist_not = 1;
+      (yyval.condition)->exist_not = true;
 
       delete (yyvsp[-3].rel_attr);
     }
@@ -3054,7 +3054,7 @@ yyreduce:
       (yyval.condition)->left_value = *(yyvsp[-3].value);
       // $$->comp = EQ;
       (yyval.condition)->is_null = true;
-      (yyval.condition)->exist_not = 1;
+      (yyval.condition)->exist_not = true;
 
       delete (yyvsp[-3].value);
     }

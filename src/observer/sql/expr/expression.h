@@ -234,7 +234,7 @@ public:
 
 private:
   CompOp comp_;
-  bool exist_not_;
+  bool exist_not_ = false;
   std::unique_ptr<Expression> left_;
   std::unique_ptr<Expression> right_;
 };

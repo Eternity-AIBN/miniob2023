@@ -1092,7 +1092,7 @@ condition:
       $$->left_attr = *$1;
       // $$->comp = EQ;      // 虽然没用，但还是初始化一个避免后续filter_stmt判断出问题
       $$->is_null = true;
-      $$->exist_not = 0;
+      $$->exist_not = false;
 
       delete $1;
     }
@@ -1103,7 +1103,7 @@ condition:
       $$->left_value = *$1;
       // $$->comp = EQ;
       $$->is_null = true;
-      $$->exist_not = 0;
+      $$->exist_not = false;
 
       delete $1;
     }
@@ -1114,7 +1114,7 @@ condition:
       $$->left_attr = *$1;
       // $$->comp = EQ;
       $$->is_null = true;
-      $$->exist_not = 1;
+      $$->exist_not = true;
 
       delete $1;
     }
@@ -1125,7 +1125,7 @@ condition:
       $$->left_value = *$1;
       // $$->comp = EQ;
       $$->is_null = true;
-      $$->exist_not = 1;
+      $$->exist_not = true;
 
       delete $1;
     }

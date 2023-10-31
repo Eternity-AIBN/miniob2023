@@ -91,7 +91,7 @@ public:
 
 private:
   CompOp comp_ = NO_OP;
-  bool exist_not_;
+  bool exist_not_=false;
   FilterObj left_;
   FilterObj right_;
 };

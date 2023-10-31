@@ -91,7 +91,7 @@ struct ConditionSqlNode
   Value           left_value;      ///< left-hand side value if left_is_attr = FALSE
   RelAttrSqlNode  left_attr;       ///< left-hand side attribute
   CompOp          comp;            ///< comparison operator
-  bool            exist_not;
+  bool            exist_not = false;
   bool            is_null = false;
   int             right_is_attr;   ///< TRUE if right-hand side is an attribute
                                    ///< 1时，操作符右边是属性名，0时，是属性值

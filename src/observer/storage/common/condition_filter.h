@@ -82,7 +82,7 @@ private:
   ConDesc right_;
   AttrType attr_type_ = UNDEFINED;
   CompOp comp_op_ = NO_OP;
-  bool exist_not_;
+  bool exist_not_=false;
 };
 
 class CompositeConditionFilter : public ConditionFilter 
