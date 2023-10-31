@@ -134,6 +134,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   Expression *                      expression;
   std::vector<Expression *> *       expression_list;
   std::vector<Value> *              value_list;
+  std::vector<std::vector<Value>> * row_value_list;
   std::vector<ConditionSqlNode> *   condition_list;
   std::vector<RelAttrSqlNode> *     rel_attr_list;
   std::vector<AggRelAttrSqlNode> *  agg_rel_attr_list;
@@ -168,6 +169,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <attr_infos>          attr_def_list
 %type <attr_info>           attr_def
 %type <value_list>          value_list
+%type <row_value_list>      row_value_list
 %type <condition_list>      where
 %type <condition_list>      condition_list
 %type <rel_attr_list>       select_attr
@@ -478,19 +480,48 @@ type:
     | DATE_T  { $$=DATES; }
     ;
 insert_stmt:        /*insert   语句的语法解析树*/
-    INSERT INTO ID VALUES LBRACE value value_list RBRACE 
+    INSERT INTO ID VALUES LBRACE value value_list RBRACE row_value_list
     {
       $$ = new ParsedSqlNode(SCF_INSERT);
       $$->insertion.relation_name = $3;
+      std::vector<Value> row_value;
       if ($7 != nullptr) {
-        $$->insertion.values.swap(*$7);
+        row_value.swap(*$7);
       }
-      $$->insertion.values.emplace_back(*$6);
-      std::reverse($$->insertion.values.begin(), $$->insertion.values.end());
+      row_value.emplace_back(*$6);
+      std::reverse(row_value.begin(), row_value.end());
       delete $6;
       free($3);
+
+      if ($9 != nullptr) {
+        $$->insertion.values.swap(*$9);
+      }
+      $$->insertion.values.emplace_back(row_value);
+      std::reverse($$->insertion.values.begin(), $$->insertion.values.end());
     }
     ;
+
+row_value_list:
+		/* EMPTY */
+		{
+      $$ = nullptr;
+    }
+    | COMMA LBRACE value value_list RBRACE row_value_list {
+			if ($6 != nullptr) {
+        $$ = $6;
+      } else {
+        $$ = new std::vector<std::vector<Value>>;
+      }
+      std::vector<Value> row_value;
+      if ($4 != nullptr) {
+        row_value.swap(*$4);
+      }
+      row_value.emplace_back(*$3);
+      std::reverse(row_value.begin(), row_value.end());
+      delete $3;
+
+      $$->emplace_back(row_value);
+		}
 
 value_list:
     /* empty */

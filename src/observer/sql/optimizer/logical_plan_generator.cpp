@@ -363,9 +363,15 @@ RC LogicalPlanGenerator::create_plan(
     InsertStmt *insert_stmt, unique_ptr<LogicalOperator> &logical_operator)
 {
   Table *table = insert_stmt->table();
-  vector<Value> values(insert_stmt->values(), insert_stmt->values() + insert_stmt->value_amount());
 
-  InsertLogicalOperator *insert_operator = new InsertLogicalOperator(table, values);
+  vector<vector<Value>> row_values;
+  for(int i=0; i<insert_stmt->values().size(); i++){
+    vector<Value> values(insert_stmt->values()[i], insert_stmt->values()[i] + insert_stmt->value_amount());
+    row_values.push_back(values);
+  }
+  // vector<Value> values(insert_stmt->values(), insert_stmt->values() + insert_stmt->value_amount());
+
+  InsertLogicalOperator *insert_operator = new InsertLogicalOperator(table, row_values);
   logical_operator.reset(insert_operator);
   return RC::SUCCESS;
 }

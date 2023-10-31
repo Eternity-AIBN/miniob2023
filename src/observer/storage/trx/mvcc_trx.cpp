@@ -132,14 +132,15 @@ MvccTrx::~MvccTrx()
 {
 }
 
-RC MvccTrx::insert_record(Table *table, Record &record)
+RC MvccTrx::insert_record(Table *table, std::vector<Record> &record)
 {
+  // TODO 插入多条数据
   Field begin_field;
   Field end_field;
   trx_fields(table, begin_field, end_field);
 
-  begin_field.set_int(record, -trx_id_);
-  end_field.set_int(record, trx_kit_.max_trx_id());
+  begin_field.set_int(record[0], -trx_id_);
+  end_field.set_int(record[0], trx_kit_.max_trx_id());
 
   RC rc = table->insert_record(record);
   if (rc != RC::SUCCESS) {
@@ -147,12 +148,12 @@ RC MvccTrx::insert_record(Table *table, Record &record)
     return rc;
   }
 
-  rc = log_manager_->append_log(CLogType::INSERT, trx_id_, table->table_id(), record.rid(), record.len(), 0/*offset*/, record.data());
+  rc = log_manager_->append_log(CLogType::INSERT, trx_id_, table->table_id(), record[0].rid(), record[0].len(), 0/*offset*/, record[0].data());
   ASSERT(rc == RC::SUCCESS, "failed to append insert record log. trx id=%d, table id=%d, rid=%s, record len=%d, rc=%s",
-      trx_id_, table->table_id(), record.rid().to_string().c_str(), record.len(), strrc(rc));
+      trx_id_, table->table_id(), record[0].rid().to_string().c_str(), record[0].len(), strrc(rc));
 
   pair<OperationSet::iterator, bool> ret = 
-        operations_.insert(Operation(Operation::Type::INSERT, table, record.rid()));
+        operations_.insert(Operation(Operation::Type::INSERT, table, record[0].rid()));
   if (!ret.second) {
     rc = RC::INTERNAL;
     LOG_WARN("failed to insert operation(insertion) into operation set: duplicate");

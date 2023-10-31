@@ -105,11 +105,13 @@ RC insert_record_from_file(Table *table,
   }
 
   if (RC::SUCCESS == rc) {
+    std::vector<Record> records;
     Record record;
     rc = table->make_record(field_num, record_values.data(), record);
+    records.push_back(record);
     if (rc != RC::SUCCESS) {
       errmsg << "insert failed.";
-    } else if (RC::SUCCESS != (rc = table->insert_record(record))) {
+    } else if (RC::SUCCESS != (rc = table->insert_record(records))) {
       errmsg << "insert failed.";
     }
   }

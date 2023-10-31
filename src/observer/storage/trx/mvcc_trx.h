@@ -66,7 +66,7 @@ public:
   MvccTrx(MvccTrxKit &trx_kit, int32_t trx_id); // used for recover
   virtual ~MvccTrx();
 
-  RC insert_record(Table *table, Record &record) override;
+  RC insert_record(Table *table, std::vector<Record> &record) override;
   RC delete_record(Table *table, Record &record) override;
   RC update_record(Table *table, Record &record) override;
 
