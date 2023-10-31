@@ -75,7 +75,7 @@ RC UpdatePhysicalOperator::open(Trx *trx)
       }
 
       Value cell;
-      if (RC::SUCCESS != (rc = get_value_for_sub_query(trx, sub_query_expr, cell))) {
+      if (RC::SUCCESS != (rc = get_value_for_sub_query(trx, sub_query_expr, cell))) {   // update null或者select语句中有多行
         LOG_WARN("Update get cell for sub_query failed. RC = %d:%s", rc, strrc(rc));
         // return rc;
         multi_records = true;
@@ -90,13 +90,11 @@ RC UpdatePhysicalOperator::open(Trx *trx)
     const AttrType field_type = field_meta->type();
     const AttrType value_type = update_value->attr_type();
     if (AttrType::NULLS == value_type) {  // 更新 null 值
-      if (!field_meta->nullable()) {      // 该列 not null
+      if (!field_meta->nullable()) {      // 该列 not null————还得看最外面的where条件成不成立，如果不成立的话也算成功
+        set_non_null_col_null = true;
         LOG_WARN("field type mismatch. can not be null. table=%s, field=%s, field type=%d, value_type=%d",
-            table_->name(),
-            field_meta->name(),
-            field_type,
-            value_type);
-        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+            table_->name(), field_meta->name(), field_type, value_type);
+        // return RC::SCHEMA_FIELD_TYPE_MISMATCH;
       }
       update_value->set_type(AttrType::NULLS);    // 只是将type设置成NULLS
     }
@@ -160,6 +158,10 @@ RC UpdatePhysicalOperator::next()
   while (RC::SUCCESS == (rc = child->next())) {
     if(multi_records){
       multi_records = false;
+      return RC::INTERNAL;
+    }
+    if(set_non_null_col_null){
+      set_non_null_col_null = false;
       return RC::INTERNAL;
     }
     Tuple *tuple = child->current_tuple();

@@ -45,6 +45,7 @@ public:
 public:
   std::vector<const FieldMeta *> fields_;       // 把要更新的字段类型保存下来，后在operator中就不用再判断了
   bool multi_records = false;
+  bool set_non_null_col_null = false;     // update-select子句没有结果，视为 set col=NULL，如果col定义为not null，那么成功与否取决于外层where查询条件
   
 private:
   Table *table_ = nullptr;
