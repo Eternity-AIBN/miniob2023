@@ -129,6 +129,11 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
         value_expr = static_cast<ValueExpr *>(left_expr.get());
       }
 
+      if (value_expr->value_.attr_type() == NULLS){
+        index = nullptr;
+        break;
+      }
+
       if (field_expr == nullptr) {
         continue;
       }

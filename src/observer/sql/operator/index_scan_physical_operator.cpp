@@ -63,9 +63,24 @@ RC IndexScanPhysicalOperator::open(Trx *trx)
   int tmp_length = 0;
   for (int i = predicates_.size()-1; i >=0 ; i--){
     ComparisonExpr* comparisonExpr = static_cast<ComparisonExpr *>(predicates_[i].get());
-    ValueExpr* valueExpr = static_cast<ValueExpr *>(comparisonExpr->right().get());
+    // ValueExpr* valueExpr = static_cast<ValueExpr *>(comparisonExpr->right().get());
+    ValueExpr* valueExpr;
+    unique_ptr<Expression> &left_expr = comparisonExpr->left();
+    unique_ptr<Expression> &right_expr = comparisonExpr->right();
+    // 左右比较的一边最少是一个值
+    if (left_expr->type() != ExprType::VALUE && right_expr->type() != ExprType::VALUE) {
+      continue;
+    }
+    if (left_expr->type() == ExprType::FIELD) {
+      ASSERT(right_expr->type() == ExprType::VALUE, "right expr should be a value expr while left is field expr");
+      valueExpr = static_cast<ValueExpr *>(right_expr.get());
+    } else if (right_expr->type() == ExprType::FIELD) {
+      ASSERT(left_expr->type() == ExprType::VALUE, "left expr should be a value expr while right is a field expr");
+      valueExpr = static_cast<ValueExpr *>(left_expr.get());
+    }
+
     Value cur_value = valueExpr->get_value();
-    if (nullptr != cur_value.data()) {
+    if (cur_value.attr_type() != NULLS && nullptr != cur_value.data()) {
       tmp_length += cur_value.length();
     }
   }
@@ -77,9 +92,23 @@ RC IndexScanPhysicalOperator::open(Trx *trx)
   int pos = 0;
   for (int i = predicates_.size()-1; i >=0 ; i--){
     ComparisonExpr* comparisonExpr = static_cast<ComparisonExpr *>(predicates_[i].get());
-    ValueExpr* valueExpr = static_cast<ValueExpr *>(comparisonExpr->right().get());
+    // ValueExpr* valueExpr = static_cast<ValueExpr *>(comparisonExpr->right().get());
+    ValueExpr* valueExpr;
+    unique_ptr<Expression> &left_expr = comparisonExpr->left();
+    unique_ptr<Expression> &right_expr = comparisonExpr->right();
+    // 左右比较的一边最少是一个值
+    if (left_expr->type() != ExprType::VALUE && right_expr->type() != ExprType::VALUE) {
+      continue;
+    }
+    if (left_expr->type() == ExprType::FIELD) {
+      ASSERT(right_expr->type() == ExprType::VALUE, "right expr should be a value expr while left is field expr");
+      valueExpr = static_cast<ValueExpr *>(right_expr.get());
+    } else if (right_expr->type() == ExprType::FIELD) {
+      ASSERT(left_expr->type() == ExprType::VALUE, "left expr should be a value expr while right is a field expr");
+      valueExpr = static_cast<ValueExpr *>(left_expr.get());
+    }
     Value cur_value = valueExpr->get_value();
-    if (nullptr != cur_value.data()) {
+    if (cur_value.attr_type() != NULLS && nullptr != cur_value.data()) {
       // set bitmap for null
       common::Bitmap left_map(left + tmp_length, bitmap_len);
       common::Bitmap right_map(right + tmp_length, bitmap_len);

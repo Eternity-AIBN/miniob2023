@@ -84,7 +84,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
 
   CompOp comp = condition.comp;
   if (condition.is_null == true){
-    comp = CompOp::EQUAL_TO;
+    comp = CompOp::LIKE_TO;
   }
   if (comp < EQUAL_TO || comp >= NO_OP) {
     LOG_WARN("invalid compare operator : %d", comp);
