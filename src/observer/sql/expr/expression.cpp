@@ -150,6 +150,19 @@ RC ComparisonExpr::try_get_value(Value &cell) const
   if (left_->type() == ExprType::VALUE && right_->type() == ExprType::VALUE) {
     ValueExpr *left_value_expr = static_cast<ValueExpr *>(left_.get());
     ValueExpr *right_value_expr = static_cast<ValueExpr *>(right_.get());
+
+    
+    if(right_value_expr->is_null_){    // xxx is null 的情况
+      const Value &left_cell = left_value_expr->get_value();
+      if (left_cell.attr_type() == NULLS){   // null is null 才成立
+        cell.set_boolean(exist_not_ ? false : true);
+      } else{
+        cell.set_boolean(exist_not_ ? true : false);
+      }
+      return RC::SUCCESS;
+    }
+    
+
     const Value &left_cell = left_value_expr->get_value();
     const Value &right_cell = right_value_expr->get_value();
 
@@ -170,6 +183,22 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value) const
 {
   Value left_value;
   Value right_value;
+
+  if (ValueExpr* derived = dynamic_cast<ValueExpr*>(right_.get())){
+    if(derived->is_null_){    // xxx is null 的情况
+      RC rc = left_->get_value(tuple, left_value);
+      if (rc != RC::SUCCESS) {
+        LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
+        return rc;
+      }
+      if (left_value.attr_type() == NULLS){   // null is null 才成立
+        value.set_boolean(exist_not_ ? false : true);
+      } else{
+        value.set_boolean(exist_not_ ? true : false);
+      }
+      return rc;
+    }
+  }
 
   RC rc = left_->get_value(tuple, left_value);
   if (rc != RC::SUCCESS) {

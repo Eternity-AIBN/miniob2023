@@ -112,6 +112,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         EXPLAIN
         LIKE
         NOT
+        IS
         NULLABLE
         EQ
         LT
@@ -522,6 +523,7 @@ row_value_list:
 
       $$->emplace_back(row_value);
 		}
+    ;
 
 value_list:
     /* empty */
@@ -1082,6 +1084,50 @@ condition:
 
       delete $1;
       delete $4;
+    }
+    | rel_attr IS NULLABLE
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 1;
+      $$->left_attr = *$1;
+      $$->comp = EQ;      // 虽然没用，但还是初始化一个避免后续filter_stmt判断出问题
+      $$->is_null = 1;
+      $$->exist_not = 0;
+
+      delete $1;
+    }
+    | value IS NULLABLE
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 0;
+      $$->left_value = *$1;
+      $$->comp = EQ;
+      $$->is_null = 1;
+      $$->exist_not = 0;
+
+      delete $1;
+    }
+    | rel_attr IS NOT NULLABLE
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 1;
+      $$->left_attr = *$1;
+      $$->comp = EQ;
+      $$->is_null = 1;
+      $$->exist_not = 1;
+
+      delete $1;
+    }
+    | value IS NOT NULLABLE
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 0;
+      $$->left_value = *$1;
+      $$->comp = EQ;
+      $$->is_null = 1;
+      $$->exist_not = 1;
+
+      delete $1;
     }
     ;
 

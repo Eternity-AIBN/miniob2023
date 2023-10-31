@@ -145,7 +145,7 @@ class ValueExpr : public Expression
 {
 public:
   ValueExpr() = default;
-  explicit ValueExpr(const Value &value) : value_(value)
+  explicit ValueExpr(const Value &value, bool is_null = false) : value_(value), is_null_(is_null)
   {}
 
   virtual ~ValueExpr() = default;
@@ -164,6 +164,7 @@ public:
 // private:
 public:
   Value value_;
+  bool is_null_ = false;    // xxx is null
 };
 
 /**
@@ -320,55 +321,7 @@ private:
 class SubQueryExpression : public Expression {
 public:
   SubQueryExpression() = default;
-  // SubQueryExpression(SelectSqlNode &sql_node)
-  // {
-  //   std::vector<RelAttrSqlNode> new_attributes;  
-  //   std::vector<std::string> new_relations; 
-  //   std::vector<ConditionSqlNode> new_conditions;
-  //   for(int i=0; i<sql_node.attributes.size(); i++){
-  //     RelAttrSqlNode *tmp_rel = new RelAttrSqlNode();
-  //     std::string *tmp_relation_name = new std::string(sql_node.attributes[i].relation_name.c_str());
-  //     std::string *tmp_attribute_name = new std::string(sql_node.attributes[i].attribute_name.c_str());
-  //     tmp_rel->relation_name = *tmp_relation_name;
-  //     tmp_rel->attribute_name = *tmp_attribute_name;
-  //     new_attributes.push_back(*tmp_rel);
-  //   }
-  //   for(int i=0; i<sql_node.relations.size(); i++){
-  //     std::string *tmp = new std::string(sql_node.relations[i].c_str());
-  //     new_relations.push_back(*tmp);
-  //   }
-  //   for(int i=0; i<sql_node.conditions.size(); i++){
-  //     ConditionSqlNode *tmp_condition = new ConditionSqlNode();
-  //     tmp_condition->left_is_attr = sql_node.conditions[i].left_is_attr;
-  //     tmp_condition->exist_not = sql_node.conditions[i].exist_not;
-  //     tmp_condition->right_is_attr = sql_node.conditions[i].right_is_attr;
-  //     tmp_condition->comp = sql_node.conditions[i].comp;
-  //     // Value           left_value; 
-  //     Value *tmp_left_value = new Value(sql_node.conditions[i].left_value);
-  //     tmp_condition->left_value = *tmp_left_value;
-  //     // Value           right_value;
-  //     Value *tmp_right_value= new Value(sql_node.conditions[i].right_value);
-  //     tmp_condition->right_value = *tmp_right_value;
-  //     // RelAttrSqlNode  left_attr;
-  //     RelAttrSqlNode *tmp_left_attr = new RelAttrSqlNode();
-  //     std::string *tmp_relation_name = new std::string(sql_node.conditions[i].left_attr.relation_name.c_str());
-  //     std::string *tmp_attribute_name = new std::string(sql_node.conditions[i].left_attr.attribute_name.c_str());
-  //     tmp_left_attr->relation_name = *tmp_relation_name;
-  //     tmp_left_attr->attribute_name = *tmp_attribute_name;
-  //     tmp_condition->left_attr = *tmp_left_attr;
-  //     // RelAttrSqlNode  right_attr;
-  //     RelAttrSqlNode *tmp_right_attr = new RelAttrSqlNode();
-  //     std::string *tmp_relation_name2 = new std::string(sql_node.conditions[i].right_attr.relation_name.c_str());
-  //     std::string *tmp_attribute_name2 = new std::string(sql_node.conditions[i].right_attr.attribute_name.c_str());
-  //     tmp_right_attr->relation_name = *tmp_relation_name2;
-  //     tmp_right_attr->attribute_name = *tmp_attribute_name2;
-  //     tmp_condition->right_attr = *tmp_right_attr;
-  //     new_conditions.push_back(*tmp_condition);
-  //   }
-  //   select_sql.attributes = new_attributes;
-  //   select_sql.relations = new_relations;
-  //   select_sql.conditions = new_conditions;
-  // }
+  
   SubQueryExpression(SelectSqlNode *sql_node) : select_sql(sql_node)
   {}
   SubQueryExpression(SelectAggSqlNode *sql_node) : select_agg_sql(sql_node)

@@ -118,7 +118,14 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     filter_unit->set_left(filter_obj);
   }
 
-  if (condition.right_is_attr) {
+  if (condition.is_null){   // attr is null, value is null, null is null
+    FilterObj filter_obj;
+    filter_obj.is_null = true;    // 进行 xxx is null 的比较
+    Value *null_value = new Value();
+    null_value->set_type(NULLS);
+    filter_obj.init_value(*null_value);
+    filter_unit->set_right(filter_obj);
+  } else if (condition.right_is_attr) {
     Table *table = nullptr;
     const FieldMeta *field = nullptr;
     rc = get_table_and_field(db, default_table, tables, condition.right_attr, table, field);
