@@ -141,18 +141,24 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     filter_unit->set_right(filter_obj);
   } else {
     if (flag == 1){
-      int32_t date = -1;
-      RC rc = string_to_date(condition.right_value.get_string(), date);
-      if (rc != RC::SUCCESS){
-        LOG_TRACE("field_type is date error");
-        return rc;
-      }
-      Value values = condition.right_value;
-      values.set_date(date);
+      if(condition.right_value.attr_type() == NULLS){ // date = null 时不需要做类型转换
+        FilterObj filter_obj;
+        filter_obj.init_value(condition.right_value);
+        filter_unit->set_right(filter_obj);
+      }else{
+        int32_t date = -1;
+        RC rc = string_to_date(condition.right_value.get_string(), date);
+        if (rc != RC::SUCCESS){
+          LOG_TRACE("field_type is date error");
+          return rc;
+        }
+        Value values = condition.right_value;
+        values.set_date(date);
 
-      FilterObj filter_obj;
-      filter_obj.init_value(values);
-      filter_unit->set_right(filter_obj);
+        FilterObj filter_obj;
+        filter_obj.init_value(values);
+        filter_unit->set_right(filter_obj);
+      }
     }
     else{
       FilterObj filter_obj;
