@@ -77,8 +77,6 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
         // }
         flag = true;
         Expression *expression = nullptr;
-        // const std::unordered_map<std::string, Table *> table_map;
-        // const std::vector<Table *> tables;
         if (ExprType::VALUE == update.exprs[k]->type()) {     // update set col1=1
           expression = new ValueExpr(((ValueExpr *)(update.exprs[k]))->get_value());
         } else if (ExprType::SUBQUERY == update.exprs[k]->type()) {   // update set col1=(select xxx)

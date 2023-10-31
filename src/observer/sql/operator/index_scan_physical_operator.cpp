@@ -69,8 +69,8 @@ RC IndexScanPhysicalOperator::open(Trx *trx)
       tmp_length += cur_value.length();
     }
   }
-  memcpy(left + tmp_length, 0, bitmap_len);
-  memcpy(right + tmp_length, 0, bitmap_len);
+  memset(left + tmp_length, 0, bitmap_len);
+  memset(right + tmp_length, 0, bitmap_len);
   left_len += bitmap_len;
   right_len += bitmap_len;
 

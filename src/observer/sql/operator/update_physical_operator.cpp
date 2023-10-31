@@ -26,11 +26,10 @@ RC UpdatePhysicalOperator::open(Trx *trx)
   auto get_value_for_sub_query = [](Trx *trx, const SubQueryExpression *expr, Value &cell) {
     expr->open_sub_query(trx);
     RC rc = expr->get_value(cell);
-    // if (RC::RECORD_EOF == rc) {      // TODO support NULL
-    //   // e.g. a = select a  -> a = null
-    //   cell.set_null();
-    // } else 
-    if (RC::SUCCESS == rc) {
+    if (RC::RECORD_EOF == rc) {      // TODO support NULL
+      // e.g. a = select a  -> a = null
+      cell.set_type(AttrType::NULLS);
+    } else if (RC::SUCCESS == rc) {
       Value tmp_cell;
       if (RC::SUCCESS == (rc = expr->get_value(tmp_cell))) {
         // e.g. a = select a  -> a = (1, 2, 3)
@@ -90,7 +89,18 @@ RC UpdatePhysicalOperator::open(Trx *trx)
     const FieldMeta *field_meta = fields_[i];
     const AttrType field_type = field_meta->type();
     const AttrType value_type = update_value->attr_type();
-    if (field_type != value_type){    // 类型转换
+    if (AttrType::NULLS == value_type) {  // 更新 null 值
+      if (!field_meta->nullable()) {      // 该列 not null
+        LOG_WARN("field type mismatch. can not be null. table=%s, field=%s, field type=%d, value_type=%d",
+            table_->name(),
+            field_meta->name(),
+            field_type,
+            value_type);
+        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+      }
+      update_value->set_type(AttrType::NULLS);    // 只是将type设置成NULLS
+    }
+    else if (field_type != value_type){    // 类型转换
       if (field_type == DATES){
         int32_t date = -1;
         rc = string_to_date(update_value->get_string(), date);
