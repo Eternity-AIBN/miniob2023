@@ -238,6 +238,7 @@ RC PhysicalPlanGenerator::create_plan(ProjectAggLogicalOperator &project_oper, u
 
   ProjectAggPhysicalOperator *project_operator = new ProjectAggPhysicalOperator;
   project_operator->set_aggop(project_oper.aggop());
+  project_operator->set_select_count_star(project_oper.select_count_star());
   const vector<Field> &project_fields = project_oper.fields();
   for (const Field &field : project_fields) {
     project_operator->add_projection(field.table(), field.meta());

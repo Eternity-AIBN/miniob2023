@@ -25,6 +25,11 @@ public:
     aggop_ = aggop;
   }
 
+  void set_select_count_star(std::vector<bool> select_count_star)
+  {
+    select_count_star_ = select_count_star;
+  }
+
   PhysicalOperatorType type() const override
   {
     return PhysicalOperatorType::PROJECT_AGG;
@@ -45,4 +50,5 @@ private:
   ProjectTuple tuple_;
   ValueListTuple res_tuple;
   std::vector<AggOp> aggop_;
+  std::vector<bool> select_count_star_;
 };

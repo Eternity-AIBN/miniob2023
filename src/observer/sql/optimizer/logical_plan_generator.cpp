@@ -153,6 +153,7 @@ RC LogicalPlanGenerator::create_plan(
   const std::vector<Table *> &tables = select_agg_stmt->tables();
   const std::vector<Field> &all_fields = select_agg_stmt->query_fields();
   const std::vector<AggOp> &aggops = select_agg_stmt->aggop();
+  const std::vector<bool> &select_count_star = select_agg_stmt->select_count_star();
   for (Table *table : tables) {
     std::vector<Field> fields;
     for (const Field &field : all_fields) {
@@ -179,7 +180,7 @@ RC LogicalPlanGenerator::create_plan(
     return rc;
   }
 
-  unique_ptr<LogicalOperator> project_oper(new ProjectAggLogicalOperator(all_fields, aggops));
+  unique_ptr<LogicalOperator> project_oper(new ProjectAggLogicalOperator(all_fields, aggops, select_count_star));
   if (predicate_oper) {
     if (table_oper) {
       predicate_oper->add_child(std::move(table_oper));

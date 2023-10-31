@@ -15,7 +15,7 @@
 class ProjectAggLogicalOperator : public LogicalOperator 
 {
 public:
-  ProjectAggLogicalOperator(const std::vector<Field> &fields, const std::vector<AggOp> &aggop);
+  ProjectAggLogicalOperator(const std::vector<Field> &fields, const std::vector<AggOp> &aggop, const std::vector<bool> &select_count_star);
   virtual ~ProjectAggLogicalOperator() = default;
 
   LogicalOperatorType type() const override
@@ -39,6 +39,10 @@ public:
   {
     return aggop_;
   }
+  const std::vector<bool> &select_count_star() const
+  {
+    return select_count_star_;
+  }
 
 private:
   //! 投影映射的字段名称
@@ -47,4 +51,5 @@ private:
   //! 不过现在简单处理，就使用字段来描述
   std::vector<Field> fields_;
   std::vector<AggOp> aggop_;
+  std::vector<bool> select_count_star_;
 };
