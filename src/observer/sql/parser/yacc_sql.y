@@ -494,17 +494,17 @@ insert_stmt:        /*insert   语句的语法解析树*/
     {
       $$ = new ParsedSqlNode(SCF_INSERT);
       $$->insertion.relation_name = $3;
-      std::vector<Value> row_value;
+      std::vector<Value> *row_value = new std::vector<Value>;
       if ($7 != nullptr) {
-        row_value.swap(*$7);
+        row_value->swap(*$7);
       }
-      row_value.emplace_back(*$6);
-      std::reverse(row_value.begin(), row_value.end());
+      row_value->emplace_back(*$6);
+      std::reverse(row_value->begin(), row_value->end());
 
       if ($9 != nullptr) {
         $$->insertion.values.swap(*$9);
       }
-      $$->insertion.values.emplace_back(row_value);
+      $$->insertion.values.emplace_back(*row_value);
       std::reverse($$->insertion.values.begin(), $$->insertion.values.end());
 
       delete $6;

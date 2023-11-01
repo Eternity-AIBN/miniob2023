@@ -2168,17 +2168,17 @@ yyreduce:
     {
       (yyval.sql_node) = new ParsedSqlNode(SCF_INSERT);
       (yyval.sql_node)->insertion.relation_name = (yyvsp[-6].string);
-      std::vector<Value> row_value;
+      std::vector<Value> *row_value = new std::vector<Value>;
       if ((yyvsp[-2].value_list) != nullptr) {
-        row_value.swap(*(yyvsp[-2].value_list));
+        row_value->swap(*(yyvsp[-2].value_list));
       }
-      row_value.emplace_back(*(yyvsp[-3].value));
-      std::reverse(row_value.begin(), row_value.end());
+      row_value->emplace_back(*(yyvsp[-3].value));
+      std::reverse(row_value->begin(), row_value->end());
 
       if ((yyvsp[0].row_value_list) != nullptr) {
         (yyval.sql_node)->insertion.values.swap(*(yyvsp[0].row_value_list));
       }
-      (yyval.sql_node)->insertion.values.emplace_back(row_value);
+      (yyval.sql_node)->insertion.values.emplace_back(*row_value);
       std::reverse((yyval.sql_node)->insertion.values.begin(), (yyval.sql_node)->insertion.values.end());
 
       delete (yyvsp[-3].value);
