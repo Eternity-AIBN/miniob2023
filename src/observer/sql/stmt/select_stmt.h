@@ -25,6 +25,7 @@ class FieldMeta;
 class FilterStmt;
 class Db;
 class Table;
+class OrderByStmt;
 
 /**
  * @brief 表示select语句
@@ -57,9 +58,14 @@ public:
   {
     return filter_stmt_;
   }
+  OrderByStmt *orderby_stmt() const
+  {
+    return orderby_stmt_;
+  }
 
 private:
   std::vector<Field> query_fields_;
   std::vector<Table *> tables_;
   FilterStmt *filter_stmt_ = nullptr;
+  OrderByStmt *orderby_stmt_ = nullptr;
 };

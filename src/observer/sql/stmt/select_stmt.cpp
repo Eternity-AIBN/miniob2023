@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/stmt/select_stmt.h"
 #include "sql/stmt/filter_stmt.h"
+#include "sql/stmt/orderby_stmt.h"
 #include "common/log/log.h"
 #include "common/lang/string.h"
 #include "storage/db/db.h"
@@ -24,6 +25,10 @@ SelectStmt::~SelectStmt()
   if (nullptr != filter_stmt_) {
     delete filter_stmt_;
     filter_stmt_ = nullptr;
+  }
+  if (nullptr != orderby_stmt_) {
+    delete orderby_stmt_;
+    orderby_stmt_ = nullptr;
   }
 }
 
@@ -143,12 +148,27 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
     return rc;
   }
 
+  OrderByStmt *orderby_stmt = nullptr;
+  if (0 != select_sql.orderbys.size()) {
+    rc = OrderByStmt::create(db, 
+      default_table, 
+      &table_map, 
+      select_sql.orderbys.data(), 
+      static_cast<int>(select_sql.orderbys.size()),
+      orderby_stmt);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("cannot construct order by stmt");
+      return rc;
+    }
+  }
+
   // everything alright
   SelectStmt *select_stmt = new SelectStmt();
   // TODO add expression copy
   select_stmt->tables_.swap(tables);
   select_stmt->query_fields_.swap(query_fields);
   select_stmt->filter_stmt_ = filter_stmt;
+  select_stmt->orderby_stmt_ = orderby_stmt;
   stmt = select_stmt;
   return RC::SUCCESS;
 }

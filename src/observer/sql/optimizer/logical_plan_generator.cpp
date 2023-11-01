@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/project_logical_operator.h"
 #include "sql/operator/project_agg_logical_operator.h"
 #include "sql/operator/predicate_logical_operator.h"
+#include "sql/operator/sort_logical_operator.h"
 #include "sql/operator/table_get_logical_operator.h"
 #include "sql/operator/insert_logical_operator.h"
 #include "sql/operator/delete_logical_operator.h"
@@ -33,6 +34,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/select_agg_stmt.h"
 #include "sql/stmt/select_join_stmt.h"
 #include "sql/stmt/filter_stmt.h"
+#include "sql/stmt/orderby_stmt.h"
 #include "sql/stmt/insert_stmt.h"
 #include "sql/stmt/delete_stmt.h"
 #include "sql/stmt/update_stmt.h"
@@ -121,6 +123,35 @@ RC LogicalPlanGenerator::create_plan(
       table_oper = unique_ptr<LogicalOperator>(join_oper);
     }
   }
+
+  if (select_stmt->orderby_stmt() != nullptr){
+    unique_ptr<LogicalOperator> sort_oper;
+    sort_oper = unique_ptr<SortLogicalOperator>(new SortLogicalOperator(select_stmt->orderby_stmt()));
+
+    unique_ptr<LogicalOperator> predicate_oper;
+    RC rc = create_plan(select_stmt->filter_stmt(), predicate_oper);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("failed to create predicate logical plan. rc=%s", strrc(rc));
+      return rc;
+    }
+    if (predicate_oper) {
+      if (table_oper) {
+        predicate_oper->add_child(std::move(table_oper));
+      }
+      sort_oper->add_child(std::move(predicate_oper));
+    } else {
+      if (table_oper) {
+        sort_oper->add_child(std::move(table_oper));
+      }
+    }
+
+    unique_ptr<LogicalOperator> project_oper(new ProjectLogicalOperator(all_fields));
+    project_oper->add_child(std::move(sort_oper));
+
+    logical_operator.swap(project_oper);
+    return RC::SUCCESS;
+  }
+  
 
   unique_ptr<LogicalOperator> predicate_oper;
   RC rc = create_plan(select_stmt->filter_stmt(), predicate_oper);

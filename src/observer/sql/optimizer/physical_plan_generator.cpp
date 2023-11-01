@@ -20,6 +20,8 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/index_scan_physical_operator.h"
 #include "sql/operator/predicate_logical_operator.h"
 #include "sql/operator/predicate_physical_operator.h"
+#include "sql/operator/sort_logical_operator.h"
+#include "sql/operator/sort_physical_operator.h"
 #include "sql/operator/project_logical_operator.h"
 #include "sql/operator/project_agg_logical_operator.h"
 #include "sql/operator/project_physical_operator.h"
@@ -85,6 +87,10 @@ RC PhysicalPlanGenerator::create(LogicalOperator &logical_operator, unique_ptr<P
 
     case LogicalOperatorType::JOIN: {
       return create_plan(static_cast<JoinLogicalOperator &>(logical_operator), oper);
+    } break;
+
+    case LogicalOperatorType::SORT: {
+      return create_plan(static_cast<SortLogicalOperator &>(logical_operator), oper);
     } break;
 
     default: {
@@ -190,6 +196,33 @@ RC PhysicalPlanGenerator::create_plan(PredicateLogicalOperator &pred_oper, uniqu
   unique_ptr<Expression> expression = std::move(expressions.front());
   oper = unique_ptr<PhysicalOperator>(new PredicatePhysicalOperator(std::move(expression)));
   oper->add_child(std::move(child_phy_oper));
+  return rc;
+}
+
+RC PhysicalPlanGenerator::create_plan(SortLogicalOperator &sort_oper, unique_ptr<PhysicalOperator> &oper)
+{
+  vector<unique_ptr<LogicalOperator>> &child_opers = sort_oper.children();
+
+  unique_ptr<PhysicalOperator> child_phy_oper;
+
+  RC rc = RC::SUCCESS;
+  if (!child_opers.empty()) {
+    LogicalOperator *child_oper = child_opers.front().get();    // 现在SortOper取代了原来ProjectOper的位置，child_oper可能是predicate或者table_get，相当于在原来的project和下一个oper之间加了一层
+    rc = create(*child_oper, child_phy_oper);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("failed to create project logical operator's child physical operator. rc=%s", strrc(rc));
+      return rc;
+    }
+  }
+
+  SortPhysicalOperator *sort_operator = new SortPhysicalOperator(sort_oper.orderby_stmt_);
+  if (child_phy_oper) {
+    sort_operator->add_child(std::move(child_phy_oper));
+  }
+
+  oper = unique_ptr<PhysicalOperator>(sort_operator);
+
+  LOG_TRACE("create a sort physical operator");
   return rc;
 }
 

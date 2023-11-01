@@ -74,10 +74,12 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         SELECT
         MAX
         MIN
+        IN
         COUNT
         AVG
         SUM
         DESC
+        ASC
         SHOW
         SYNC
         INSERT
@@ -96,6 +98,8 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         HELP
         EXIT
         UNIQUE
+        ORDER
+        BY
         DOT //QUOTE
         INTO
         VALUES
@@ -125,6 +129,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %union {
   ParsedSqlNode *                   sql_node;
   ConditionSqlNode *                condition;
+  OrderByNode *                     order_by_unit;
   Value *                           value;
   enum CompOp                       comp;
   enum AggOp                        agg;
@@ -137,6 +142,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   std::vector<Value> *              value_list;
   std::vector<std::vector<Value>> * row_value_list;
   std::vector<ConditionSqlNode> *   condition_list;
+  std::vector<OrderByNode> *        order_by_list;
   std::vector<RelAttrSqlNode> *     rel_attr_list;
   std::vector<AggRelAttrSqlNode> *  agg_rel_attr_list;
   std::vector<std::string> *        relation_list;
@@ -173,6 +179,9 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <row_value_list>      row_value_list
 %type <condition_list>      where
 %type <condition_list>      condition_list
+%type <order_by_unit>       order_by_unit
+%type <order_by_list>       order_by_list
+%type <order_by_list>       opt_order_by
 %type <rel_attr_list>       select_attr
 %type <agg_rel_attr_list>   select_agg_attr
 %type <relation_list>       rel_list
@@ -663,7 +672,7 @@ sub_select:
     ;
 
 select_stmt:        /*  select 语句的语法解析树*/
-    SELECT select_attr FROM ID rel_list where
+    SELECT select_attr FROM ID rel_list where opt_order_by
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -680,6 +689,10 @@ select_stmt:        /*  select 语句的语法解析树*/
       if ($6 != nullptr) {
         $$->selection.conditions.swap(*$6);
         delete $6;
+      }
+      if ($7 != nullptr) {
+        $$->selection.orderbys.swap(*$7);
+        delete $7;
       }
       free($4);
     }
@@ -723,6 +736,96 @@ select_stmt:        /*  select 语句的语法解析树*/
         delete $8;
       }
       free($4);
+    }
+    ;
+order_by_unit:
+    ID {
+      RelAttrSqlNode *tmp = new RelAttrSqlNode;
+      tmp->attribute_name = $1;
+      free($1);
+      $$ = new OrderByNode;
+      $$->order_by_attr = *tmp;
+      $$->is_asc = 1;
+    }
+    | ID DOT ID {
+      RelAttrSqlNode *tmp = new RelAttrSqlNode;
+      tmp->relation_name  = $1;
+      tmp->attribute_name = $3;
+      free($1);
+      free($3);
+      $$ = new OrderByNode;
+      $$->order_by_attr = *tmp;
+      $$->is_asc = 1;
+    }
+    |
+    ID DESC
+    {
+      RelAttrSqlNode *tmp = new RelAttrSqlNode;
+      tmp->attribute_name = $1;
+      free($1);
+      $$ = new OrderByNode;
+      $$->order_by_attr = *tmp;
+      $$->is_asc = 0;
+    }
+    |
+    ID ASC
+    {
+      RelAttrSqlNode *tmp = new RelAttrSqlNode;
+      tmp->attribute_name = $1;
+      free($1);
+      $$ = new OrderByNode;
+      $$->order_by_attr = *tmp;
+      $$->is_asc = 1;
+    }
+    |
+    ID DOT ID DESC
+    {
+      RelAttrSqlNode *tmp = new RelAttrSqlNode;
+      tmp->relation_name  = $1;
+      tmp->attribute_name = $3;
+      free($1);
+      free($3);
+      $$ = new OrderByNode;
+      $$->order_by_attr = *tmp;
+      $$->is_asc = 0;
+    }
+    |
+    ID DOT ID ASC
+    {
+      RelAttrSqlNode *tmp = new RelAttrSqlNode;
+      tmp->relation_name  = $1;
+      tmp->attribute_name = $3;
+      free($1);
+      free($3);
+      $$ = new OrderByNode;
+      $$->order_by_attr = *tmp;
+      $$->is_asc = 1;
+    }
+    ;
+order_by_list:
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | order_by_unit {
+      $$ = new std::vector<OrderByNode>;
+      $$->emplace_back(*$1);
+      delete $1;
+    }
+    | order_by_unit COMMA order_by_list {
+      $$ = $3;
+      $$->emplace_back(*$1);
+      delete $1;
+    }
+    ;
+opt_order_by:
+	  /* empty */
+    {
+      $$ = nullptr;
+    }
+    | ORDER BY order_by_list
+    {
+        $$ = $3;
     }
     ;
 calc_stmt:

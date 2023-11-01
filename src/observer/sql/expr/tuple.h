@@ -127,6 +127,13 @@ public:
     }
     return str;
   }
+
+  // push back records of the tuple to arg:record
+  virtual void get_record(std::vector<Record *> &record) const = 0;
+
+  // this func will set all records
+  // invoke this func will erase begin arg:record
+  virtual void set_record(std::vector<Record *> &record) = 0;
 };
 
 /**
@@ -255,6 +262,18 @@ public:
     return *record_;
   }
 
+  void set_record(std::vector<Record *> &record) override
+  {
+    assert(record.size() >= 1);
+    set_record(record.front());
+    record.erase(record.begin());
+  }
+
+  void get_record(std::vector<Record *> &record) const override
+  {
+    record.emplace_back(record_);
+  }
+
 private:
   Record *record_ = nullptr;
   const Table *table_ = nullptr;
@@ -313,6 +332,16 @@ public:
     return tuple_->find_cell(spec, cell);
   }
 
+  void set_record(std::vector<Record *> &record) override
+  {
+    tuple_->set_record(record);
+  }
+
+  void get_record(std::vector<Record *> &record) const override
+  {
+    tuple_->get_record(record);
+  }
+
 #if 0
   RC cell_spec_at(int index, const TupleCellSpec *&spec) const override
   {
@@ -365,6 +394,15 @@ public:
     return RC::NOTFOUND;
   }
 
+  void set_record(std::vector<Record *> &record) override
+  {
+    // nothing
+  }
+
+  void get_record(std::vector<Record *> &record) const override
+  {
+    // nothing
+  }
 
 private:
   const std::vector<std::unique_ptr<Expression>> &expressions_;
@@ -403,6 +441,16 @@ public:
   virtual RC find_cell(const TupleCellSpec &spec, Value &cell) const override
   {
     return RC::INTERNAL;
+  }
+
+  void set_record(std::vector<Record *> &record) override
+  {
+    // nothing
+  }
+
+  void get_record(std::vector<Record *> &record) const override
+  {
+    // nothing
   }
 
 private:
@@ -456,6 +504,16 @@ public:
     }
 
     return right_->find_cell(spec, value);
+  }
+
+  void set_record(std::vector<Record *> &record) override
+  {
+    // nothing
+  }
+
+  void get_record(std::vector<Record *> &record) const override
+  {
+    // nothing
   }
 
 private:
