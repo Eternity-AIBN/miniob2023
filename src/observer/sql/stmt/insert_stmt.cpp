@@ -36,6 +36,10 @@ RC InsertStmt::create(Db *db, InsertSqlNode &inserts, Stmt *&stmt)
     return RC::INVALID_ARGUMENT;
   }
 
+  if (inserts.values[0].size() == 1){
+    return RC::INVALID_ARGUMENT;
+  }
+
   // check whether the table exists
   Table *table = db->find_table(table_name);
   if (nullptr == table) {
