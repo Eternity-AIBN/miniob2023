@@ -114,7 +114,7 @@ RC InsertStmt::create(Db *db, InsertSqlNode &inserts, Stmt *&stmt)
     }
 
     // const Value *const_values = new Value(*values);
-    Value test = values[1];
+    // Value test = values[1];
     row_values.push_back(values);
   }
   
