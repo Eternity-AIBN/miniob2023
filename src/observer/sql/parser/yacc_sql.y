@@ -498,7 +498,8 @@ insert_stmt:        /*insert   语句的语法解析树*/
       if ($7 != nullptr) {
         row_value->swap(*$7);
       }
-      row_value->emplace_back(*$6);
+      Value *tmp_value = new Value($6->attr_type(), $6->get_data(), $6->length());
+      row_value->emplace_back(*tmp_value);
       std::reverse(row_value->begin(), row_value->end());
 
       if ($9 != nullptr) {
