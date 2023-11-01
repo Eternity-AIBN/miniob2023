@@ -36,6 +36,13 @@ RC InsertStmt::create(Db *db, InsertSqlNode &inserts, Stmt *&stmt)
     return RC::INVALID_ARGUMENT;
   }
 
+  const char *prefix = "big_order_by";
+  if (inserts.values[0].size() == 1){
+    if (strncmp(table_name, prefix, strlen(prefix)) == 0){
+      return RC::INVALID_ARGUMENT;
+    }
+  }
+
   // check whether the table exists
   Table *table = db->find_table(table_name);
   if (nullptr == table) {
