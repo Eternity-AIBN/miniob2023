@@ -41,6 +41,9 @@ RC SortPhysicalOperator::fetch_and_sort_table()
       expr->get_value(*children_[0]->current_tuple(), value);
       pair_value.emplace_back(value);
     }
+    // for (int kk=0; kk<pair_value.size(); kk++){
+    //   printf("pair_value[kk]: %f\n", pair_value[kk].get_float());
+    // }
     // 2 cons pair
     // 3 cons pair vector
     pair_sort_table.emplace_back(std::make_pair(pair_value, index++));
@@ -54,6 +57,7 @@ RC SortPhysicalOperator::fetch_and_sort_table()
     }
     sort_table_.emplace_back(cpd_rcd);
   }
+
   if (RC::RECORD_EOF != rc) {
     LOG_ERROR("Fetch Table Error In SortOperator. RC: %d", rc);
     return rc;
@@ -63,7 +67,8 @@ RC SortPhysicalOperator::fetch_and_sort_table()
   // print_info();
 
   // then sort table
-  bool order[units.size()];  // specify 1 asc or 2 desc
+  // bool order[units.size()];  // specify 1 asc or 2 desc
+  std::vector<bool> order(units.size(), true);
   for (std::vector<OrderByUnit *>::size_type i = 0; i < units.size(); ++i) {
     order[i] = units[i]->sort_type();
   }

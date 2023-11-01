@@ -508,12 +508,14 @@ public:
 
   void set_record(std::vector<Record *> &record) override
   {
-    // nothing
+    left_->set_record(record);
+    right_->set_record(record);
   }
 
   void get_record(std::vector<Record *> &record) const override
   {
-    // nothing
+    left_->get_record(record);
+    right_->get_record(record);
   }
 
 private:

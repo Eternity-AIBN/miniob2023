@@ -692,6 +692,7 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
       if ($7 != nullptr) {
         $$->selection.orderbys.swap(*$7);
+        std::reverse($$->selection.orderbys.begin(), $$->selection.orderbys.end());
         delete $7;
       }
       free($4);
@@ -816,6 +817,7 @@ order_by_list:
       $$ = $3;
       $$->emplace_back(*$1);
       delete $1;
+
     }
     ;
 opt_order_by:
