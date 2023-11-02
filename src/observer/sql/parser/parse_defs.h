@@ -69,6 +69,7 @@ enum CompOp
   EQUAL_TO,     ///< "="
   LIKE_TO,      ///< LIKE
   IN_OP,        ///< IN
+  EXISTS_OP,    ///< EXISTS
   LESS_EQUAL,   ///< "<="
   NOT_EQUAL,    ///< "<>"
   LESS_THAN,    ///< "<"

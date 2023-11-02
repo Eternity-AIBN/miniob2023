@@ -207,6 +207,21 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
     }
   }
 
+  if (comp_ == CompOp::EXISTS_OP){    // where exists ()  此时右边为SubQueryExpr
+    assert(ExprType::SUBQUERY == right_.get()->type());
+    SubQueryExpression* sub_query_expr = dynamic_cast<SubQueryExpression*>(right_.get());
+    sub_query_expr->open_sub_query(trx);
+    // TODO compound with parent tuple
+    RC tmp_rc = sub_query_expr->get_value(tuple, right_value);
+    if (RC::SUCCESS != tmp_rc && RC::RECORD_EOF != tmp_rc) {
+      return tmp_rc;
+    }
+    sub_query_expr->close_sub_query();
+    bool res = CompOp::EXISTS_OP == comp_ ? (RC::SUCCESS == tmp_rc) : (RC::RECORD_EOF == tmp_rc);
+    value.set_boolean(res);
+    return RC::SUCCESS;
+  }
+
   RC rc = left_->get_value(tuple, left_value);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
@@ -255,7 +270,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
       right_values.push_back(*tmp);
     }
   }
-  
+
   if (comp_ == CompOp::IN_OP){    // where col in() 此时右边为ValueExpr/SubQueryExpr, 可能不止有一个值
     // 类型转换
     for(int i=0; i<right_values.size(); i++){

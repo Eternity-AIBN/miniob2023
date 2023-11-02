@@ -75,6 +75,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         MAX
         MIN
         IN
+        EXISTS
         COUNT
         AVG
         SUM
@@ -1260,6 +1261,25 @@ condition:
       $$->in_exprs = $5;
       delete $1;
     }
+    | EXISTS LBRACE sub_select_for_in RBRACE
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 0;
+      $$->right_is_attr = 0;    // filter_stmt.cpp 中判断会用到
+      $$->comp = CompOp::EXISTS_OP;
+      $$->exist_not = false;
+      $$->in_exprs = $3;
+    }
+    | NOT EXISTS LBRACE sub_select_for_in RBRACE
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 1;
+      $$->right_is_attr = 0;    // filter_stmt.cpp 中判断会用到
+      $$->comp = CompOp::EXISTS_OP;
+      $$->exist_not = true;
+      $$->in_exprs = $4;
+    }
+
     ;
 
 sub_select_for_in:
@@ -1311,6 +1331,25 @@ sub_select_for_in:
       }
       free($4);
       $$ = new SubQueryExpression(select_agg_sql_node);
+    }
+    | SELECT '*' FROM ID where
+    {
+      SelectSqlNode *select_sql_node = new SelectSqlNode();
+      std::vector<RelAttrSqlNode> *tmp = new std::vector<RelAttrSqlNode>;
+      RelAttrSqlNode attr;
+      attr.relation_name  = "";
+      attr.attribute_name = "*";
+      tmp->emplace_back(attr);
+      select_sql_node->attributes.swap(*tmp);
+        
+      select_sql_node->relations.push_back($4);
+
+      if ($5 != nullptr) {
+        select_sql_node->conditions.swap(*$5);
+        delete $5;
+      }
+      free($4);
+      $$ = new SubQueryExpression(select_sql_node);
     }
     ;
 

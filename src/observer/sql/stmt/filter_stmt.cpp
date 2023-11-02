@@ -148,14 +148,14 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
         // RC rc = list_expr->create_expression(condition.in_exprs, expression, CompOp::IN_OP, db);
         expression = condition.in_exprs;
         if (RC::SUCCESS != rc) {
-          LOG_ERROR("UpdateStmt Create SubQueryExpression Failed. RC = %d:%s", rc, strrc(rc));
+          LOG_ERROR("FilterStmt Create SubQueryExpression Failed. RC = %d:%s", rc, strrc(rc));
           return rc;
         }
       } else if (ExprType::SUBQUERY ==condition.in_exprs->type()) {   
         SubQueryExpression *sub_query_expr = new SubQueryExpression();
         RC rc = sub_query_expr->create_expression(condition.in_exprs, expression, CompOp::IN_OP, db);
         if (RC::SUCCESS != rc) {
-          LOG_ERROR("UpdateStmt Create SubQueryExpression Failed. RC = %d:%s", rc, strrc(rc));
+          LOG_ERROR("FilterStmt Create SubQueryExpression Failed. RC = %d:%s", rc, strrc(rc));
           return rc;
         }
       }
