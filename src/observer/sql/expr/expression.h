@@ -389,7 +389,7 @@ public:
   RC open_sub_query(Trx *trx) const;
   RC close_sub_query() const;
 
-  RC create_expression(const Expression *expr, Expression *&res_expr, CompOp comp = NO_OP, Db *db = nullptr);
+  RC create_expression(const Expression *expr, const std::unordered_map<std::string, Table *> &table_map, Expression *&res_expr, CompOp comp = NO_OP, Db *db = nullptr);
 
 private:
   SelectSqlNode *select_sql;

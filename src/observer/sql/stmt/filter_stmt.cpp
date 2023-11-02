@@ -95,31 +95,54 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
 
   bool flag = 0;    // 判断是否进行日期的比较，如 date = "2022-06-01"
 
-  if (condition.left_is_attr) {
-    Table *table = nullptr;
-    const FieldMeta *field = nullptr;
-    rc = get_table_and_field(db, default_table, tables, condition.left_attr, table, field);
-
-    if (field != nullptr){
-      const AttrType field_type = field->type();
-      if (field_type == DATES){  
-        flag = 1;
+  if (condition.comp != CompOp::EXISTS_OP){
+    if (condition.left_is_attr) {
+      Table *table = nullptr;
+      const FieldMeta *field = nullptr;
+      rc = get_table_and_field(db, default_table, tables, condition.left_attr, table, field);
+      if (field != nullptr){
+        const AttrType field_type = field->type();
+        if (field_type == DATES){  
+          flag = 1;
+        }
       }
+      if (rc != RC::SUCCESS) {
+        LOG_WARN("cannot find attr");
+        return rc;
+      }
+      FilterObj filter_obj;
+      filter_obj.init_attr(Field(table, field));
+      filter_unit->set_left(filter_obj);
+    } else if (condition.in_exprs != nullptr){   // where col in(xxx, xxx)
+      // filter_unit->set_right_expr(condition.in_exprs);
+      Expression *expression = nullptr;
+      if (ExprType::LISTVALUE == condition.in_exprs->type()) { 
+        expression = condition.in_exprs;
+        if (RC::SUCCESS != rc) {
+          LOG_ERROR("FilterStmt Create SubQueryExpression Failed. RC = %d:%s", rc, strrc(rc));
+          return rc;
+        }
+      } else if (ExprType::SUBQUERY ==condition.in_exprs->type()) {   
+        SubQueryExpression *sub_query_expr = new SubQueryExpression();
+        RC rc = sub_query_expr->create_expression(condition.in_exprs, *tables, expression, CompOp::IN_OP, db);
+        if (RC::SUCCESS != rc) {
+          LOG_ERROR("FilterStmt Create SubQueryExpression Failed. RC = %d:%s", rc, strrc(rc));
+          return rc;
+        }
+      }
+      filter_unit->set_left_expr(expression);
+    } else {
+      // TODO 日期比较时，暂时只考虑了 date = "2022-06-01" 这种情况，还没考虑 "2022-06-01" = date
+      FilterObj filter_obj;
+      filter_obj.init_value(condition.left_value);
+      filter_unit->set_left(filter_obj);
     }
-
-    if (rc != RC::SUCCESS) {
-      LOG_WARN("cannot find attr");
-      return rc;
+  }else {
+      FilterObj filter_obj;
+      Value *null_value = new Value();
+      filter_obj.init_value(*null_value);
+      filter_unit->set_left(filter_obj);
     }
-    FilterObj filter_obj;
-    filter_obj.init_attr(Field(table, field));
-    filter_unit->set_left(filter_obj);
-  } else {
-    // TODO 日期比较时，暂时只考虑了 date = "2022-06-01" 这种情况，还没考虑 "2022-06-01" = date
-    FilterObj filter_obj;
-    filter_obj.init_value(condition.left_value);
-    filter_unit->set_left(filter_obj);
-  }
 
   if (condition.is_null){   // attr is null, value is null, null is null
     FilterObj filter_obj;
@@ -144,8 +167,6 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
       // filter_unit->set_right_expr(condition.in_exprs);
       Expression *expression = nullptr;
       if (ExprType::LISTVALUE == condition.in_exprs->type()) { 
-        // ListExpr *list_expr = new ListExpr();
-        // RC rc = list_expr->create_expression(condition.in_exprs, expression, CompOp::IN_OP, db);
         expression = condition.in_exprs;
         if (RC::SUCCESS != rc) {
           LOG_ERROR("FilterStmt Create SubQueryExpression Failed. RC = %d:%s", rc, strrc(rc));
@@ -153,7 +174,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
         }
       } else if (ExprType::SUBQUERY ==condition.in_exprs->type()) {   
         SubQueryExpression *sub_query_expr = new SubQueryExpression();
-        RC rc = sub_query_expr->create_expression(condition.in_exprs, expression, CompOp::IN_OP, db);
+        RC rc = sub_query_expr->create_expression(condition.in_exprs, *tables, expression, CompOp::IN_OP, db);
         if (RC::SUCCESS != rc) {
           LOG_ERROR("FilterStmt Create SubQueryExpression Failed. RC = %d:%s", rc, strrc(rc));
           return rc;

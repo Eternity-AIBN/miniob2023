@@ -1250,6 +1250,19 @@ condition:
       $$->in_exprs = $4;
       delete $1;
     }
+    | LBRACE sub_select_for_in RBRACE comp_op rel_attr
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 0;
+      
+      $$->right_is_attr = 1;    // filter_stmt.cpp 中判断会用到
+      $$->right_attr = *$5;
+
+      $$->comp = $4;
+      $$->exist_not = false;
+      $$->in_exprs = $2;
+      delete $5;
+    }
     | rel_attr NOT comp_op LBRACE sub_select_for_in RBRACE
     {
       $$ = new ConditionSqlNode;

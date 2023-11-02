@@ -323,6 +323,16 @@ RC LogicalPlanGenerator::create_plan(
     const FilterObj &filter_obj_left = filter_unit->left();
     const FilterObj &filter_obj_right = filter_unit->right();
 
+    if (filter_unit->left_expr() != nullptr){    // where col in(v1, v2, ...)
+      unique_ptr<Expression> left(static_cast<Expression *>(filter_unit->left_expr()));
+      unique_ptr<Expression> right(filter_obj_right.is_attr
+                                          ? static_cast<Expression *>(new FieldExpr(filter_obj_right.field))
+                                          : (filter_obj_right.is_null ? static_cast<Expression *>(new ValueExpr(filter_obj_right.value, true)) : static_cast<Expression *>(new ValueExpr(filter_obj_right.value))));
+      ComparisonExpr *cmp_expr = new ComparisonExpr(filter_unit->comp(), filter_unit->exist_not(), std::move(left), std::move(right));
+      cmp_exprs.emplace_back(cmp_expr);
+      continue;
+    } 
+
     unique_ptr<Expression> left(filter_obj_left.is_attr
                                          ? static_cast<Expression *>(new FieldExpr(filter_obj_left.field))
                                          : static_cast<Expression *>(new ValueExpr(filter_obj_left.value)));
@@ -332,7 +342,7 @@ RC LogicalPlanGenerator::create_plan(
       ComparisonExpr *cmp_expr = new ComparisonExpr(filter_unit->comp(), filter_unit->exist_not(), std::move(left), std::move(right));
       cmp_exprs.emplace_back(cmp_expr);
       continue;
-    } 
+    }
 
     unique_ptr<Expression> right(filter_obj_right.is_attr
                                           ? static_cast<Expression *>(new FieldExpr(filter_obj_right.field))
