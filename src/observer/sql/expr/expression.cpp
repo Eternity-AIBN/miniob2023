@@ -291,6 +291,11 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
       return RC::SUCCESS;
     }
     derived->get_values(right_values, trx);
+    if (right_values.size()==0){  // 子查询选择结果为NULL
+      Value *tmp_value = new Value();
+      tmp_value->set_type(NULLS);
+      right_values.push_back(*tmp_value);
+    }
   } else if(ListExpr* derived = dynamic_cast<ListExpr*>(right_.get())){  //ListExpr
     for (int i=0; i<derived->value_.size(); i++){
       Value *tmp = new Value(derived->value_[i]);
