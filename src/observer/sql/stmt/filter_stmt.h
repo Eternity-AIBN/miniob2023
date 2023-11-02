@@ -80,6 +80,15 @@ public:
     right_ = obj;
   }
 
+  void set_left_expr(Expression *&obj)
+  {
+    left_expr_ = obj;
+  }
+  void set_right_expr(Expression *&obj)
+  {
+    right_expr_ = obj;
+  }
+
   const FilterObj &left() const
   {
     return left_;
@@ -89,11 +98,23 @@ public:
     return right_;
   }
 
+  Expression *left_expr() const
+  {
+    return left_expr_;
+  }
+  Expression *right_expr() const
+  {
+    return right_expr_;
+  }
+
 private:
   CompOp comp_ = NO_OP;
   bool exist_not_=false;
   FilterObj left_;
   FilterObj right_;
+
+  Expression *left_expr_ = nullptr;
+  Expression *right_expr_ = nullptr;
 };
 
 /**

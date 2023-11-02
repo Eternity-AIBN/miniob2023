@@ -83,7 +83,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
   RC rc = RC::SUCCESS;
 
   CompOp comp = condition.comp;
-  if (condition.is_null == true){
+  if (condition.is_null == true){   // is null 情况下没有给 comp 赋值，通过不了下面的判断
     comp = CompOp::LIKE_TO;
   }
   if (comp < EQUAL_TO || comp >= NO_OP) {
@@ -140,25 +140,45 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     filter_obj.init_attr(Field(table, field));
     filter_unit->set_right(filter_obj);
   } else {
-    if (flag == 1){
-      if(condition.right_value.attr_type() == NULLS){ // date = null 时不需要做类型转换
-        FilterObj filter_obj;
-        filter_obj.init_value(condition.right_value);
-        filter_unit->set_right(filter_obj);
-      }else{
-        int32_t date = -1;
-        RC rc = string_to_date(condition.right_value.get_string(), date);
-        if (rc != RC::SUCCESS){
-          LOG_TRACE("field_type is date error");
+    if (condition.comp == CompOp::IN_OP){   // where col in(xxx, xxx)
+      // filter_unit->set_right_expr(condition.in_exprs);
+      Expression *expression = nullptr;
+      if (ExprType::LISTVALUE == condition.in_exprs->type()) { 
+        // ListExpr *list_expr = new ListExpr();
+        // RC rc = list_expr->create_expression(condition.in_exprs, expression, CompOp::IN_OP, db);
+        expression = condition.in_exprs;
+        if (RC::SUCCESS != rc) {
+          LOG_ERROR("UpdateStmt Create SubQueryExpression Failed. RC = %d:%s", rc, strrc(rc));
           return rc;
         }
-        Value values = condition.right_value;
-        values.set_date(date);
-
-        FilterObj filter_obj;
-        filter_obj.init_value(values);
-        filter_unit->set_right(filter_obj);
+      } else if (ExprType::SUBQUERY ==condition.in_exprs->type()) {   
+        SubQueryExpression *sub_query_expr = new SubQueryExpression();
+        RC rc = sub_query_expr->create_expression(condition.in_exprs, expression, CompOp::IN_OP, db);
+        if (RC::SUCCESS != rc) {
+          LOG_ERROR("UpdateStmt Create SubQueryExpression Failed. RC = %d:%s", rc, strrc(rc));
+          return rc;
+        }
       }
+      filter_unit->set_right_expr(expression);
+    }
+    else if(condition.right_value.attr_type() == NULLS){ // date = null 时不需要做类型转换
+      FilterObj filter_obj;
+      filter_obj.init_value(condition.right_value);
+      filter_unit->set_right(filter_obj);
+    }
+    else if (flag == 1){
+      int32_t date = -1;
+      RC rc = string_to_date(condition.right_value.get_string(), date);
+      if (rc != RC::SUCCESS){
+        LOG_TRACE("field_type is date error");
+        return rc;
+      }
+      Value values = condition.right_value;
+      values.set_date(date);
+
+      FilterObj filter_obj;
+      filter_obj.init_value(values);
+      filter_unit->set_right(filter_obj);
     }
     else{
       FilterObj filter_obj;

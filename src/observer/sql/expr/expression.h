@@ -50,6 +50,7 @@ enum class ExprType
   CONJUNCTION,  ///< 多个表达式使用同一种关系(AND或OR)来联结
   ARITHMETIC,   ///< 算术运算
   SUBQUERY,     ///< 子查询
+  LISTVALUE,    ///< in(value1, value2, ...)
 };
 
 /**
@@ -72,7 +73,7 @@ public:
   /**
    * @brief 根据具体的tuple，来计算当前表达式的值。tuple有可能是一个具体某个表的行数据
    */
-  virtual RC get_value(const Tuple &tuple, Value &value) const = 0;
+  virtual RC get_value(const Tuple &tuple, Value &value, Trx *trx=nullptr) const = 0;
 
   /**
    * @brief 在没有实际运行的情况下，也就是无法获取tuple的情况下，尝试获取表达式的值
@@ -131,7 +132,7 @@ public:
 
   const char *field_name() const { return field_.field_name(); }
 
-  RC get_value(const Tuple &tuple, Value &value) const override;
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx=nullptr) const override;
 
 private:
   Field field_;
@@ -150,7 +151,7 @@ public:
 
   virtual ~ValueExpr() = default;
 
-  RC get_value(const Tuple &tuple, Value &value) const override;
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx=nullptr) const override;
   RC try_get_value(Value &value) const override { value = value_; return RC::SUCCESS; }
 
   ExprType type() const override { return ExprType::VALUE; }
@@ -181,7 +182,7 @@ public:
   {
     return ExprType::CAST;
   }
-  RC get_value(const Tuple &tuple, Value &value) const override;
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx=nullptr) const override;
 
   RC try_get_value(Value &value) const override;
 
@@ -209,7 +210,7 @@ public:
 
   ExprType type() const override { return ExprType::COMPARISON; }
 
-  RC get_value(const Tuple &tuple, Value &value) const override;
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx=nullptr) const override;
 
   AttrType value_type() const override { return BOOLEANS; }
 
@@ -261,7 +262,7 @@ public:
 
   AttrType value_type() const override { return BOOLEANS; }
 
-  RC get_value(const Tuple &tuple, Value &value) const override;
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx=nullptr) const override;
 
   Type conjunction_type() const { return conjunction_type_; }
 
@@ -296,7 +297,7 @@ public:
 
   AttrType value_type() const override;
 
-  RC get_value(const Tuple &tuple, Value &value) const override;
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx=nullptr) const override;
   RC try_get_value(Value &value) const override;
 
   Type arithmetic_type() const { return arithmetic_type_; }
@@ -333,11 +334,11 @@ public:
     return ExprType::SUBQUERY;
   }
 
-  RC get_value(const Tuple &tuple, Value &value) const override { return RC::SUCCESS; }
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx=nullptr) const override { return get_value(value, trx); }
 
   AttrType value_type() const override { return AttrType::UNDEFINED; }
 
-  RC get_value(Value &value) const;
+  RC get_value(Value &value, Trx *trx=nullptr) const;
 
   // For no agg-func
   SelectSqlNode *get_select_node() const
@@ -383,10 +384,12 @@ public:
     return sub_agg_top_oper_;
   }
 
+  const void get_values(std::vector<Value> &values, Trx *trx=nullptr) const;
+
   RC open_sub_query(Trx *trx) const;
   RC close_sub_query() const;
 
-  RC create_expression(Expression *&expr, Expression *&res_expr, CompOp comp = NO_OP, Db *db = nullptr);
+  RC create_expression(const Expression *expr, Expression *&res_expr, CompOp comp = NO_OP, Db *db = nullptr);
 
 private:
   SelectSqlNode *select_sql;
@@ -396,4 +399,69 @@ private:
   SelectAggSqlNode *select_agg_sql = nullptr;
   SelectAggStmt *sub_agg_stmt_ = nullptr;
   ProjectAggPhysicalOperator *sub_agg_top_oper_ = nullptr;
+};
+
+
+/**
+ * @brief 多个常量值表达式
+ * @ingroup Expression
+ */
+class ListExpr : public Expression 
+{
+public:
+  ListExpr() = default;
+
+  virtual ~ListExpr() = default;
+
+  ListExpr(std::vector<Value> &values)
+  {
+    Value *value;
+    for (int i = 0; i < values.size(); i++) {
+      if (values[i].attr_type() == AttrType::NULLS){
+        value = new Value();
+        value->set_type(AttrType::NULLS);
+      } else {
+        value = new Value(values[i].attr_type(), values[i].get_data(), values[i].length());
+      }
+      value_.emplace_back(*value);
+    }
+  }
+
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx=nullptr) const override
+  {
+    return RC::UNIMPLENMENT;
+  }
+
+  RC try_get_value(Value &value) const override 
+  { 
+    return RC::UNIMPLENMENT; 
+  }
+
+  ExprType type() const override { return ExprType::LISTVALUE; }
+
+  AttrType value_type() const override { return AttrType::UNDEFINED; }
+
+  // void set_values(std::vector<Value> &values)
+  // {
+  //   Value *value;
+  //   for (int i = 0; i < values.size(); i++) {
+  //     if (values[i].attr_type() == AttrType::NULLS){
+  //       value = new Value();
+  //       value->set_type(AttrType::NULLS);
+  //     } else {
+  //       value = new Value(values[i].attr_type(), values[i].get_data(), values[i].length());
+  //     }
+  //     value_.emplace_back(*value);
+  //   }
+  // }
+
+  // RC create_expression(Expression *&expr, Expression *&res_expr, CompOp comp = NO_OP, Db *db = nullptr){
+  //   ListExpr *list_expr = new ListExpr();
+  //   list_expr->set_values(static_cast<ListExpr *>(expr)->get_value());
+  //   res_expr = list_expr;
+  //   return RC::SUCCESS;
+  // }
+
+public:
+  std::vector<Value> value_;
 };

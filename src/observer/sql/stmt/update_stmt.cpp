@@ -85,7 +85,7 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
           if (RC::SUCCESS != rc) {
             LOG_ERROR("UpdateStmt Create SubQueryExpression Failed. RC = %d:%s", rc, strrc(rc));
             return rc;
-        }
+          }
         } else {
           return RC::SQL_SYNTAX;
         }

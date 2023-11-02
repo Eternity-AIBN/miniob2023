@@ -153,12 +153,13 @@ union YYSTYPE
   struct TableAndCondition *        table_and_condition;
   struct AttributeAndExpr *         attribute_and_expr;
   Expression *                      sub_select;
+  Expression *                      sub_select_for_in;
   char *                            string;
   int                               number;
   float                             floats;
   char *                            dates;
 
-#line 162 "yacc_sql.hpp"
+#line 163 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

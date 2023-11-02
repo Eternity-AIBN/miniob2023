@@ -327,9 +327,12 @@ RC LogicalPlanGenerator::create_plan(
                                          ? static_cast<Expression *>(new FieldExpr(filter_obj_left.field))
                                          : static_cast<Expression *>(new ValueExpr(filter_obj_left.value)));
 
-    // unique_ptr<Expression> right(filter_obj_right.is_attr
-    //                                       ? static_cast<Expression *>(new FieldExpr(filter_obj_right.field))
-    //                                       : static_cast<Expression *>(new ValueExpr(filter_obj_right.value)));
+    if (filter_unit->comp() == CompOp::IN_OP){    // where col in(v1, v2, ...)
+      unique_ptr<Expression> right(static_cast<Expression *>(filter_unit->right_expr()));
+      ComparisonExpr *cmp_expr = new ComparisonExpr(filter_unit->comp(), filter_unit->exist_not(), std::move(left), std::move(right));
+      cmp_exprs.emplace_back(cmp_expr);
+      continue;
+    } 
 
     unique_ptr<Expression> right(filter_obj_right.is_attr
                                           ? static_cast<Expression *>(new FieldExpr(filter_obj_right.field))

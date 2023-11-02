@@ -29,6 +29,7 @@ RC PredicatePhysicalOperator::open(Trx *trx)
     LOG_WARN("predicate operator must has one child");
     return RC::INTERNAL;
   }
+  tmp_trx = trx;
 
   return children_[0]->open(trx);
 }
@@ -47,7 +48,7 @@ RC PredicatePhysicalOperator::next()
     }
 
     Value value;
-    rc = expression_->get_value(*tuple, value);
+    rc = expression_->get_value(*tuple, value, tmp_trx);
     if (rc != RC::SUCCESS) {
       return rc;
     }

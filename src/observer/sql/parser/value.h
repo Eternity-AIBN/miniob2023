@@ -116,6 +116,35 @@ public:
     return 0 <= compare(other);
   }
 
+  bool equal_to(const Value &other) const
+  {
+    if (attr_type_ == NULLS) {
+      return other.attr_type() == NULLS;
+    }
+    if (other.attr_type() == NULLS) {
+      return false;
+    }
+    return 0 == compare(other);
+  }
+  bool in_values(const std::vector<Value> &values) const
+  {
+    for (auto &value : values) {
+      if (equal_to(value)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  bool not_in_values(const std::vector<Value> &values) const
+  {
+    for (auto &value : values) {
+      if (equal_to(value)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
 public:
   /**
    * 获取对应的值

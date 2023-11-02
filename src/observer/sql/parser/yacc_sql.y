@@ -150,6 +150,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   struct TableAndCondition *        table_and_condition;
   struct AttributeAndExpr *         attribute_and_expr;
   Expression *                      sub_select;
+  Expression *                      sub_select_for_in;
   char *                            string;
   int                               number;
   float                             floats;
@@ -191,6 +192,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 // %type <attribute_and_name>  update_list
 %type <attribute_and_expr>  update_list
 %type <sub_select>          sub_select
+%type <sub_select_for_in>   sub_select_for_in
 %type <rel_attr_list>       attr_list
 %type <agg_rel_attr_list>   agg_attr_list
 %type <expression>          expression
@@ -1235,6 +1237,80 @@ condition:
       $$->exist_not = true;
 
       delete $1;
+    }
+    | rel_attr IN LBRACE sub_select_for_in RBRACE
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 1;
+      $$->left_attr = *$1;
+      $$->right_is_attr = 0;    // filter_stmt.cpp 中判断会用到
+      $$->comp = CompOp::IN_OP;
+      $$->exist_not = false;
+      $$->in_exprs = $4;
+      delete $1;
+    }
+    | rel_attr NOT IN LBRACE sub_select_for_in RBRACE
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 1;
+      $$->left_attr = *$1;
+      $$->right_is_attr = 0;    // filter_stmt.cpp 中判断会用到
+      $$->comp = CompOp::IN_OP;
+      $$->exist_not = true;
+      $$->in_exprs = $5;
+      delete $1;
+    }
+    ;
+
+sub_select_for_in:
+    value value_list {
+      std::vector<Value> *multi_value = new std::vector<Value>;
+      if ($2 != nullptr) {
+        multi_value->swap(*$2);
+      }
+      // Value *tmp_value = new Value($1->attr_type(), $1->get_data(), $1->length());
+      multi_value->emplace_back(*$1);
+      std::reverse(multi_value->begin(), multi_value->end());
+
+      $$ = new ListExpr(*multi_value);
+      // $$->set_values(*multi_value);
+      delete $1;
+    }
+    | SELECT rel_attr FROM ID where
+    {
+      SelectSqlNode *select_sql_node = new SelectSqlNode();
+      if ($2 != nullptr) {
+        std::vector<RelAttrSqlNode> *tmp = new std::vector<RelAttrSqlNode>;
+        tmp->emplace_back(*$2);
+        select_sql_node->attributes.swap(*tmp);
+        delete $2;
+      }
+      select_sql_node->relations.push_back($4);
+
+      if ($5 != nullptr) {
+        select_sql_node->conditions.swap(*$5);
+        delete $5;
+      }
+      free($4);
+      $$ = new SubQueryExpression(select_sql_node);
+    }
+    | SELECT agg_rel_attr FROM ID where
+    {
+      SelectAggSqlNode *select_agg_sql_node = new SelectAggSqlNode();
+      if ($2 != nullptr) {
+        std::vector<AggRelAttrSqlNode> *tmp = new std::vector<AggRelAttrSqlNode>;
+        tmp->emplace_back(*$2);
+        select_agg_sql_node->agg_attributes.swap(*tmp);
+        delete $2;
+      }
+      select_agg_sql_node->relations.push_back($4);
+
+      if ($5 != nullptr) {
+        select_agg_sql_node->conditions.swap(*$5);
+        delete $5;
+      }
+      free($4);
+      $$ = new SubQueryExpression(select_agg_sql_node);
     }
     ;
 
