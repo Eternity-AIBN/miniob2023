@@ -140,7 +140,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     filter_obj.init_attr(Field(table, field));
     filter_unit->set_right(filter_obj);
   } else {
-    if (condition.comp == CompOp::IN_OP){   // where col in(xxx, xxx)
+    if (condition.in_exprs != nullptr){   // where col in(xxx, xxx)
       // filter_unit->set_right_expr(condition.in_exprs);
       Expression *expression = nullptr;
       if (ExprType::LISTVALUE == condition.in_exprs->type()) { 

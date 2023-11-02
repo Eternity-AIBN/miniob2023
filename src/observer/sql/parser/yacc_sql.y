@@ -1238,24 +1238,24 @@ condition:
 
       delete $1;
     }
-    | rel_attr IN LBRACE sub_select_for_in RBRACE
+    | rel_attr comp_op LBRACE sub_select_for_in RBRACE
     {
       $$ = new ConditionSqlNode;
       $$->left_is_attr = 1;
       $$->left_attr = *$1;
       $$->right_is_attr = 0;    // filter_stmt.cpp 中判断会用到
-      $$->comp = CompOp::IN_OP;
+      $$->comp = $2;
       $$->exist_not = false;
       $$->in_exprs = $4;
       delete $1;
     }
-    | rel_attr NOT IN LBRACE sub_select_for_in RBRACE
+    | rel_attr NOT comp_op LBRACE sub_select_for_in RBRACE
     {
       $$ = new ConditionSqlNode;
       $$->left_is_attr = 1;
       $$->left_attr = *$1;
       $$->right_is_attr = 0;    // filter_stmt.cpp 中判断会用到
-      $$->comp = CompOp::IN_OP;
+      $$->comp = $3;
       $$->exist_not = true;
       $$->in_exprs = $5;
       delete $1;
@@ -1322,6 +1322,7 @@ comp_op:
     | GE { $$ = GREAT_EQUAL; }
     | NE { $$ = NOT_EQUAL; }
     | LIKE { $$ = LIKE_TO; }
+    | IN { $$ = IN_OP; }
     ;
 
 load_data_stmt:

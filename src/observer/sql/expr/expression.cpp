@@ -222,46 +222,42 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
     return false;
   };
 
+  std::vector<Value> right_values;
+  if(SubQueryExpression* derived = dynamic_cast<SubQueryExpression*>(right_.get())){     //SubQueryExpr
+    Stmt *sub_select;
+    if (nullptr == derived->get_sub_query_agg_stmt()){   // select
+      sub_select = dynamic_cast<Stmt *>(derived->get_sub_query_stmt());
+    }else{
+      sub_select = dynamic_cast<Stmt *>(derived->get_sub_query_agg_stmt());
+    }
+    // 根据 stmt 生成 LogicalOperator
+    std::unique_ptr<LogicalOperator> logical_oper;
+    LogicalPlanGenerator *logical_plan_generator = new LogicalPlanGenerator(); 
+    rc = logical_plan_generator->create(sub_select, logical_oper);
+    if(RC::SUCCESS != rc) { return rc; }
+    // 根据 LogicalOperator 生成 PhysicalOperator
+    std::unique_ptr<PhysicalOperator> physical_oper;
+    PhysicalPlanGenerator *physical_plan_generator = new PhysicalPlanGenerator(); 
+    rc = physical_plan_generator->create(*logical_oper, physical_oper);
+    if(RC::SUCCESS != rc) { return rc; }
+
+    if (nullptr == derived->get_sub_query_agg_stmt()){   // select
+      derived->set_sub_query_top_oper(static_cast<ProjectPhysicalOperator *>(physical_oper.get()));
+    }else{
+      derived->set_sub_query_agg_top_oper(static_cast<ProjectAggPhysicalOperator *>(physical_oper.get()));
+    }
+
+    derived->get_values(right_values, trx);
+  } else if(ListExpr* derived = dynamic_cast<ListExpr*>(right_.get())){  //ListExpr
+    // right_values = derived2->value_;
+    for (int i=0; i<derived->value_.size(); i++){
+      Value *tmp = new Value(derived->value_[i]);
+      right_values.push_back(*tmp);
+    }
+  }
+  
   if (comp_ == CompOp::IN_OP){    // where col in() 此时右边为ValueExpr/SubQueryExpr, 可能不止有一个值
-    std::vector<Value> right_values;
-    if(SubQueryExpression* derived = dynamic_cast<SubQueryExpression*>(right_.get())){     //SubQueryExpr
-      Stmt *sub_select;
-      if (nullptr == derived->get_sub_query_agg_stmt()){   // select
-        sub_select = dynamic_cast<Stmt *>(derived->get_sub_query_stmt());
-      }else{
-        sub_select = dynamic_cast<Stmt *>(derived->get_sub_query_agg_stmt());
-      }
-      // 根据 stmt 生成 LogicalOperator
-      std::unique_ptr<LogicalOperator> logical_oper;
-      LogicalPlanGenerator *logical_plan_generator = new LogicalPlanGenerator(); 
-      rc = logical_plan_generator->create(sub_select, logical_oper);
-      if(RC::SUCCESS != rc) { return rc; }
-      // 根据 LogicalOperator 生成 PhysicalOperator
-      std::unique_ptr<PhysicalOperator> physical_oper;
-      PhysicalPlanGenerator *physical_plan_generator = new PhysicalPlanGenerator(); 
-      rc = physical_plan_generator->create(*logical_oper, physical_oper);
-      if(RC::SUCCESS != rc) { return rc; }
-
-      if (nullptr == derived->get_sub_query_agg_stmt()){   // select
-        derived->set_sub_query_top_oper(static_cast<ProjectPhysicalOperator *>(physical_oper.get()));
-      }else{
-        derived->set_sub_query_agg_top_oper(static_cast<ProjectAggPhysicalOperator *>(physical_oper.get()));
-      }
-
-      derived->get_values(right_values, trx);
-    } else {  //ListExpr
-      ListExpr* derived2 = dynamic_cast<ListExpr*>(right_.get());
-      // right_values = derived2->value_;
-      for (int i=0; i<derived2->value_.size(); i++){
-        Value *tmp = new Value(derived2->value_[i]);
-        right_values.push_back(*tmp);
-      }
-    }
-    if (left_value.attr_type() == NULLS) {
-      value.set_boolean(false);  // null don't in/not in any list
-      return RC::SUCCESS;
-    }
-    // TODO 类型转换
+    // 类型转换
     for(int i=0; i<right_values.size(); i++){
       if(right_values[i].attr_type() == NULLS){   // NULL不用转换
         continue;
@@ -296,6 +292,10 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
       }
     }
 
+  if (left_value.attr_type() == NULLS) {
+    value.set_boolean(false);  // null don't in/not in any list
+    return RC::SUCCESS;
+  }
     if (exist_not_ == false){    // in
       bool res = left_value.in_values(right_values);
       value.set_boolean(res);
@@ -310,11 +310,20 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
     return RC::SUCCESS;
   }
 
-  rc = right_->get_value(tuple, right_value);
-  if (rc != RC::SUCCESS) {
-    LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
-    return rc;
+  if (right_values.size() > 1){   // 一个值与多个值比大小
+    return RC::INTERNAL;
+  } 
+  if (right_values.size() != 0){   // 右边为ValueExpr/SubQueryExpr
+    right_value = right_values[0];
+  } else {
+    rc = right_->get_value(tuple, right_value);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
+      return rc;
+    }
   }
+
+  // rc = right_->get_value(tuple, right_value);
 
   bool bool_value = false;
   rc = compare_value(left_value, right_value, bool_value);
