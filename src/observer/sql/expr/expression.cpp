@@ -222,29 +222,6 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
   // 左边是sub_select，此时才会给left_values赋值
   if (comp_ != CompOp::EXISTS_OP) {
     if(SubQueryExpression* derived = dynamic_cast<SubQueryExpression*>(left_.get())){     //SubQueryExpr
-      // Stmt *sub_select;
-      // if (nullptr == derived->get_sub_query_agg_stmt()){   // select
-      //   sub_select = dynamic_cast<Stmt *>(derived->get_sub_query_stmt());
-      // }else{
-      //   sub_select = dynamic_cast<Stmt *>(derived->get_sub_query_agg_stmt());
-      // }
-      // // 根据 stmt 生成 LogicalOperator
-      // std::unique_ptr<LogicalOperator> logical_oper;
-      // LogicalPlanGenerator *logical_plan_generator = new LogicalPlanGenerator(); 
-      // rc = logical_plan_generator->create(sub_select, logical_oper);
-      // if(RC::SUCCESS != rc) { return rc; }
-      // // 根据 LogicalOperator 生成 PhysicalOperator
-      // std::unique_ptr<PhysicalOperator> physical_oper;
-      // PhysicalPlanGenerator *physical_plan_generator = new PhysicalPlanGenerator(); 
-      // rc = physical_plan_generator->create(*logical_oper, physical_oper);
-      // if(RC::SUCCESS != rc) { return rc; }
-
-      // if (nullptr == derived->get_sub_query_agg_stmt()){   // select
-      //   derived->set_sub_query_top_oper(static_cast<ProjectPhysicalOperator *>(physical_oper.get()));
-      // }else{
-      //   derived->set_sub_query_agg_top_oper(static_cast<ProjectAggPhysicalOperator *>(physical_oper.get()));
-      // }
-
       derived->get_values(left_values, trx);
       if (left_values.size()==0 && comp_ != CompOp::IN_OP){  // 子查询选择结果为NULL，且进行大于小于的比较
         Value *tmp_value = new Value();
@@ -260,28 +237,6 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
   }
   // 右边是sub_select，此时才会给right_values赋值
   if(const SubQueryExpression* derived = dynamic_cast<SubQueryExpression*>(right_.get())){     //SubQueryExpr
-    // Stmt *sub_select;
-    // if (nullptr == derived->get_sub_query_agg_stmt()){   // select
-    //   sub_select = dynamic_cast<Stmt *>(derived->get_sub_query_stmt());
-    // }else{
-    //   sub_select = dynamic_cast<Stmt *>(derived->get_sub_query_agg_stmt());
-    // }
-    // // 根据 stmt 生成 LogicalOperator
-    // std::unique_ptr<LogicalOperator> logical_oper;
-    // LogicalPlanGenerator *logical_plan_generator = new LogicalPlanGenerator(); 
-    // rc = logical_plan_generator->create(sub_select, logical_oper);
-    // if(RC::SUCCESS != rc) { return rc; }
-    // // 根据 LogicalOperator 生成 PhysicalOperator
-    // std::unique_ptr<PhysicalOperator> physical_oper;
-    // PhysicalPlanGenerator *physical_plan_generator = new PhysicalPlanGenerator(); 
-    // rc = physical_plan_generator->create(*logical_oper, physical_oper);
-    // if(RC::SUCCESS != rc) { return rc; }
-
-    // if (nullptr == derived->get_sub_query_agg_stmt()){   // select
-    //   derived->set_sub_query_top_oper(static_cast<ProjectPhysicalOperator *>(physical_oper.get()));
-    // }else{
-    //   derived->set_sub_query_agg_top_oper(static_cast<ProjectAggPhysicalOperator *>(physical_oper.get()));
-    // }
     if (comp_ == CompOp::EXISTS_OP){    // where exists ()  此时右边为SubQueryExpr
       derived->open_sub_query(trx);
       // TODO compound with parent tuple
@@ -666,71 +621,6 @@ RC SubQueryExpression::create_expression(const Expression *expr, const std::unor
   return RC::SUCCESS;
 } 
 
-// RC SubQueryExpression::gen_physical_plan_for_subquery(Expression* expr)
-// {
-//   RC rc = RC::SUCCESS;
-
-//   // if (CompOp::AND_OP == filter->comp() || CompOp::OR_OP == filter->comp()) {
-//   //   if (RC::SUCCESS != (rc = gen_physical_plan_for_subquery(filter->left_unit(), delete_opers))) {
-//   //     return rc;
-//   //   }
-//   //   return gen_physical_plan_for_subquery(filter->right_unit(), delete_opers);
-//   // }
-//   if (expr->type() != ExprType::SUBQUERY) {
-//     return rc;
-//   }
-
-
-//   SubQueryExpression *sub_query_expr = static_cast<SubQueryExpression *>(expr);
-//   if (nullptr == sub_query_expr->get_sub_query_agg_stmt()){   // select
-//     const SelectStmt *sub_select = sub_query_expr->get_sub_query_stmt();
-//     for (auto unit : sub_select->filter_stmt()->filter_units()) {
-//       if (RC::SUCCESS != (rc = gen_physical_plan_for_subquery(unit->left_expr()))) {
-//         return rc;
-//       }
-//       if (RC::SUCCESS != (rc = gen_physical_plan_for_subquery(unit->right_expr()))) {
-//         return rc;
-//       }
-//     }
-//   }else{
-//     const SelectAggStmt *sub_select = sub_query_expr->get_sub_query_agg_stmt();
-//     for (auto unit : sub_select->filter_stmt()->filter_units()) {
-//       if (RC::SUCCESS != (rc = gen_physical_plan_for_subquery(unit->left_expr()))) {
-//         return rc;
-//       }
-//       if (RC::SUCCESS != (rc = gen_physical_plan_for_subquery(unit->right_expr()))) {
-//         return rc;
-//       }
-//     }
-//   }
-  
-//   // process sub query
-//   Stmt *sub_select;
-//   if (nullptr == sub_query_expr->get_sub_query_agg_stmt()){   // select
-//     sub_select = dynamic_cast<Stmt *>(sub_query_expr->get_sub_query_stmt());
-//   }else{
-//     sub_select = dynamic_cast<Stmt *>(sub_query_expr->get_sub_query_agg_stmt());
-//   }
-//   // 根据 stmt 生成 LogicalOperator
-//   std::unique_ptr<LogicalOperator> logical_oper;
-//   LogicalPlanGenerator *logical_plan_generator = new LogicalPlanGenerator(); 
-//   rc = logical_plan_generator->create(sub_select, logical_oper);
-//   if(RC::SUCCESS != rc) { return rc; }
-//   // 根据 LogicalOperator 生成 PhysicalOperator
-//   std::unique_ptr<PhysicalOperator> physical_oper;
-//   PhysicalPlanGenerator *physical_plan_generator = new PhysicalPlanGenerator(); 
-//   rc = physical_plan_generator->create(*logical_oper, physical_oper);
-//   if(RC::SUCCESS != rc) { return rc; }
-
-//   if (nullptr == sub_query_expr->get_sub_query_agg_stmt()){   // select
-//     sub_query_expr->set_sub_query_top_oper(static_cast<ProjectPhysicalOperator *>(physical_oper.get()));
-//   }else{
-//     sub_query_expr->set_sub_query_agg_top_oper(static_cast<ProjectAggPhysicalOperator *>(physical_oper.get()));
-//   }
-  
-//   return RC::SUCCESS;
-// }
-
 RC SubQueryExpression::gen_physical_plan_for_subquery()
 {
   RC rc = RC::SUCCESS;
@@ -743,24 +633,22 @@ RC SubQueryExpression::gen_physical_plan_for_subquery()
   // }
   if (nullptr == sub_agg_stmt_){   // select
     for (auto unit : sub_stmt_->filter_stmt()->filter_units()) {
-      if(unit->left_expr() != nullptr && unit->left_expr()->type() == ExprType::SUBQUERY){
-        SubQueryExpression *left_expr = static_cast<SubQueryExpression *>(unit->left_expr());
-        rc = left_expr->gen_physical_plan_for_subquery();
-      }
       if(unit->right_expr() != nullptr && unit->right_expr()->type() == ExprType::SUBQUERY){
         SubQueryExpression *right_expr = static_cast<SubQueryExpression *>(unit->right_expr());
         rc = right_expr->gen_physical_plan_for_subquery();
+      } else if(unit->left_expr() != nullptr && unit->left_expr()->type() == ExprType::SUBQUERY){
+        SubQueryExpression *left_expr = static_cast<SubQueryExpression *>(unit->left_expr());
+        rc = left_expr->gen_physical_plan_for_subquery();
       }
     }
   } else {
     for (auto unit : sub_agg_stmt_->filter_stmt()->filter_units()) {
-      if(unit->left_expr() != nullptr && unit->left_expr()->type() == ExprType::SUBQUERY){
-        SubQueryExpression *left_expr = static_cast<SubQueryExpression *>(unit->left_expr());
-        rc = left_expr->gen_physical_plan_for_subquery();
-      }
       if(unit->right_expr() != nullptr && unit->right_expr()->type() == ExprType::SUBQUERY){
         SubQueryExpression *right_expr = static_cast<SubQueryExpression *>(unit->right_expr());
         rc = right_expr->gen_physical_plan_for_subquery();
+      } else if(unit->left_expr() != nullptr && unit->left_expr()->type() == ExprType::SUBQUERY){
+        SubQueryExpression *left_expr = static_cast<SubQueryExpression *>(unit->left_expr());
+        rc = left_expr->gen_physical_plan_for_subquery();
       }
     }
   }
