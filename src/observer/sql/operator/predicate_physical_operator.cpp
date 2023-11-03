@@ -23,6 +23,7 @@ PredicatePhysicalOperator::PredicatePhysicalOperator(std::unique_ptr<Expression>
   ASSERT(expression_->value_type() == BOOLEANS, "predicate's expression should be BOOLEAN type");
 }
 
+
 RC PredicatePhysicalOperator::open(Trx *trx)
 {
   if (children_.size() != 1) {
@@ -30,6 +31,26 @@ RC PredicatePhysicalOperator::open(Trx *trx)
     return RC::INTERNAL;
   }
   tmp_trx = trx;
+
+  if(ConjunctionExpr* conjunction_expr = dynamic_cast<ConjunctionExpr*>(expression_.get())){
+    for (int i=0; i<conjunction_expr->children().size(); i++){
+      if(ComparisonExpr* comparison_expr = dynamic_cast<ComparisonExpr*>(conjunction_expr->children()[i].get())){
+        if(SubQueryExpression* sub_query_expr = dynamic_cast<SubQueryExpression*>(comparison_expr->right().get())){
+          sub_query_expr->gen_physical_plan_for_subquery();
+        } 
+        if(SubQueryExpression* sub_query_expr = dynamic_cast<SubQueryExpression*>(comparison_expr->left().get())){
+          sub_query_expr->gen_physical_plan_for_subquery();
+        } 
+      }
+    }
+  } else if(ComparisonExpr* comparison_expr = dynamic_cast<ComparisonExpr*>(expression_.get())){
+    if(SubQueryExpression* sub_query_expr = dynamic_cast<SubQueryExpression*>(comparison_expr->right().get())){
+      sub_query_expr->gen_physical_plan_for_subquery();
+    }
+    if(SubQueryExpression* sub_query_expr = dynamic_cast<SubQueryExpression*>(comparison_expr->left().get())){
+      sub_query_expr->gen_physical_plan_for_subquery();
+    } 
+  }
 
   return children_[0]->open(trx);
 }

@@ -23,12 +23,15 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "sql/parser/parse_defs.h"
 #include "storage/db/db.h"
+#include "sql/stmt/select_stmt.h"
+#include "sql/stmt/select_agg_stmt.h"
 
 class Tuple;
-class SelectStmt;
-class SelectAggStmt;
+// class SelectStmt;
+// class SelectAggStmt;
 class ProjectPhysicalOperator;
 class ProjectAggPhysicalOperator;
+// class FilterStmt;
 
 /**
  * @defgroup Expression
@@ -390,6 +393,8 @@ public:
   RC close_sub_query() const;
 
   RC create_expression(const Expression *expr, const std::unordered_map<std::string, Table *> &table_map, Expression *&res_expr, CompOp comp = NO_OP, Db *db = nullptr);
+
+  RC gen_physical_plan_for_subquery();
 
 private:
   SelectSqlNode *select_sql;
