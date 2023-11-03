@@ -247,6 +247,11 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
       }
 
       derived->get_values(left_values, trx);
+      if (left_values.size()==0 && comp_ != CompOp::IN_OP){  // 子查询选择结果为NULL，且进行大于小于的比较
+        Value *tmp_value = new Value();
+        tmp_value->set_type(NULLS);
+        left_values.push_back(*tmp_value);
+      }
     } else if(ListExpr* derived = dynamic_cast<ListExpr*>(left_.get())){  //ListExpr
     for (int i=0; i<derived->value_.size(); i++){
       Value *tmp = new Value(derived->value_[i]);
@@ -358,7 +363,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
   }
 
   if (left_values.size() > 1){   // 一个值与多个值比大小
-    return RC::INTERNAL;
+    return RC::INTERNAL_SELECT;
   } 
   if (left_values.size() != 0){   // 右边为ValueExpr/SubQueryExpr
     left_value = left_values[0];
@@ -367,7 +372,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
   }
 
   if (right_values.size() > 1){   // 一个值与多个值比大小
-    return RC::INTERNAL;
+    return RC::INTERNAL_SELECT;
   } 
   if (right_values.size() != 0){   // 右边为ValueExpr/SubQueryExpr
     right_value = right_values[0];
