@@ -109,6 +109,12 @@ RC PredicatePushdownRewriter::get_exprs_can_pushdown(
 
     std::unique_ptr<Expression> &left_expr = comparison_expr->left();
     std::unique_ptr<Expression> &right_expr = comparison_expr->right();
+
+    // 如果有SubQuery，不下推
+    if (left_expr->type() == ExprType::SUBQUERY || right_expr->type() == ExprType::SUBQUERY) {
+      return rc;
+    }
+
     // 比较操作的左右两边只要有一个是取列字段值的并且另一边也是取字段值或常量，就pushdown
     if (left_expr->type() != ExprType::FIELD && right_expr->type() != ExprType::FIELD) {
       return rc;

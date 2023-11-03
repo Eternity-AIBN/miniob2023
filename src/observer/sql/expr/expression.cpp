@@ -743,11 +743,11 @@ RC SubQueryExpression::gen_physical_plan_for_subquery()
   // }
   if (nullptr == sub_agg_stmt_){   // select
     for (auto unit : sub_stmt_->filter_stmt()->filter_units()) {
-      if(unit->left_expr()->type() == ExprType::SUBQUERY){
+      if(unit->left_expr() != nullptr && unit->left_expr()->type() == ExprType::SUBQUERY){
         SubQueryExpression *left_expr = static_cast<SubQueryExpression *>(unit->left_expr());
         rc = left_expr->gen_physical_plan_for_subquery();
       }
-      if(unit->right_expr()->type() == ExprType::SUBQUERY){
+      if(unit->right_expr() != nullptr && unit->right_expr()->type() == ExprType::SUBQUERY){
         SubQueryExpression *right_expr = static_cast<SubQueryExpression *>(unit->left_expr());
         rc = right_expr->gen_physical_plan_for_subquery();
       }
