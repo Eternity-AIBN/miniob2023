@@ -291,7 +291,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
       return RC::SUCCESS;
     }
     derived->get_values(right_values, trx);
-    if (right_values.size()==0){  // 子查询选择结果为NULL
+    if (right_values.size()==0 && comp_ != CompOp::IN_OP){  // 子查询选择结果为NULL，且进行大于小于的比较
       Value *tmp_value = new Value();
       tmp_value->set_type(NULLS);
       right_values.push_back(*tmp_value);
