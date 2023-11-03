@@ -633,6 +633,16 @@ RC SubQueryExpression::create_expression(const Expression *expr, const std::unor
       LOG_ERROR("SubQueryExpression Create SelectStmt Failed. RC = %d:%s", rc, strrc(rc));
       return rc;
     }
+    switch (comp) {   // 检查子查询的结果有多少列，除了exists，都只能有一列
+      case EXISTS_OP:
+        break;
+      default: {
+        if (((SelectStmt *)tmp_stmt)->query_fields().size() != 1) {
+          return RC::SQL_SYNTAX;
+        }
+        break;
+      }
+    }
     sub_expr->set_sub_query_stmt((SelectStmt *)tmp_stmt);
     res_expr = sub_expr;
   }else{
@@ -641,19 +651,18 @@ RC SubQueryExpression::create_expression(const Expression *expr, const std::unor
       LOG_ERROR("SubQueryExpression Create SelectStmt Failed. RC = %d:%s", rc, strrc(rc));
       return rc;
     }
+    switch (comp) {
+      case EXISTS_OP:
+        break;
+      default: {
+        if (((SelectStmt *)tmp_stmt)->query_fields().size() != 1) {
+          return RC::SQL_SYNTAX;
+        }
+        break;
+      }
+    }
     sub_expr->set_sub_query_agg_stmt((SelectAggStmt *)tmp_stmt);
     res_expr = sub_expr;
   }
   return RC::SUCCESS;
-  // switch (comp) {    // check projects num——不知道是什么，后面再看
-  //   case EXISTS_OP:
-  //   case NOT_EXISTS:
-  //     break;
-  //   default: {
-  //     if (((SelectStmt *)tmp_stmt)->projects().size() != 1) {
-  //       return RC::SQL_SYNTAX;
-  //     }
-  //     break;
-  //   }
-  // }
 } 
