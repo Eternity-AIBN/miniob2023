@@ -748,18 +748,18 @@ RC SubQueryExpression::gen_physical_plan_for_subquery()
         rc = left_expr->gen_physical_plan_for_subquery();
       }
       if(unit->right_expr() != nullptr && unit->right_expr()->type() == ExprType::SUBQUERY){
-        SubQueryExpression *right_expr = static_cast<SubQueryExpression *>(unit->left_expr());
+        SubQueryExpression *right_expr = static_cast<SubQueryExpression *>(unit->right_expr());
         rc = right_expr->gen_physical_plan_for_subquery();
       }
     }
   } else {
     for (auto unit : sub_agg_stmt_->filter_stmt()->filter_units()) {
-      if(unit->left_expr()->type() == ExprType::SUBQUERY){
+      if(unit->left_expr() != nullptr && unit->left_expr()->type() == ExprType::SUBQUERY){
         SubQueryExpression *left_expr = static_cast<SubQueryExpression *>(unit->left_expr());
         rc = left_expr->gen_physical_plan_for_subquery();
       }
-      if(unit->right_expr()->type() == ExprType::SUBQUERY){
-        SubQueryExpression *right_expr = static_cast<SubQueryExpression *>(unit->left_expr());
+      if(unit->right_expr() != nullptr && unit->right_expr()->type() == ExprType::SUBQUERY){
+        SubQueryExpression *right_expr = static_cast<SubQueryExpression *>(unit->right_expr());
         rc = right_expr->gen_physical_plan_for_subquery();
       }
     }
@@ -789,6 +789,7 @@ RC SubQueryExpression::gen_physical_plan_for_subquery()
     // sub_top_oper_ = physical_oper;
   }else{
     sub_agg_top_oper_ = static_cast<ProjectAggPhysicalOperator *>(physical_oper.get());
+    physical_oper.release();
   }
   
   return RC::SUCCESS;
