@@ -42,7 +42,7 @@ RC PlainCommunicator::read_event(SessionEvent *&event)
 
   // 持续接收消息，直到遇到'\0'。将'\0'遇到的后续数据直接丢弃没有处理，因为目前仅支持一收一发的模式
   while (true) {
-    read_len = ::read(fd_, buf.data() + data_len, max_packet_size - data_len);
+    read_len = ::read(fd_, buf.data() + data_len, 8192 - data_len);
     if (read_len < 0) {
       if (errno == EAGAIN) {
         continue;
@@ -53,7 +53,7 @@ RC PlainCommunicator::read_event(SessionEvent *&event)
       break;
     }
 
-    if (read_len + data_len > max_packet_size) {
+    if (read_len + data_len > 8192) {
       data_len += read_len;
       break;
     }
@@ -72,6 +72,41 @@ RC PlainCommunicator::read_event(SessionEvent *&event)
     }
 
     data_len += read_len;
+  }
+  // printf("data_len: %d\n", data_len);
+  if (data_len >= 8192){
+    while (true) {
+      read_len = ::read(fd_, buf.data() + data_len, max_packet_size - data_len);
+      if (read_len < 0) {
+        if (errno == EAGAIN) {
+          continue;
+        }
+        break;
+      }
+      if (read_len == 0) {
+        break;
+      }
+
+      if (read_len + data_len > max_packet_size) {
+        data_len += read_len;
+        break;
+      }
+
+      bool msg_end = false;
+      for (int i = 0; i < read_len; i++) {
+        if (buf[data_len + i] == 0) {
+          data_len += i + 1;
+          msg_end = true;
+          break;
+        }
+      }
+
+      if (msg_end) {
+        break;
+      }
+
+      data_len += read_len;
+    }
   }
 
   if (data_len > max_packet_size) {

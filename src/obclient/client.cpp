@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
     memset(send_buf, 0, sizeof(send_buf));
 
     int len = 0;
-    while ((len = recv(sockfd, send_buf, MAX_MEM_BUFFER_SIZE, 0)) > 0) {
+    while ((len = recv(sockfd, send_buf, 8192, 0)) > 0) {
       bool msg_end = false;
       for (int i = 0; i < len; i++) {
         if (0 == send_buf[i]) {
@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
       if (msg_end) {
         break;
       }
-      memset(send_buf, 0, MAX_MEM_BUFFER_SIZE);
+      memset(send_buf, 0, 8192);
     }
 
     if (len < 0) {
