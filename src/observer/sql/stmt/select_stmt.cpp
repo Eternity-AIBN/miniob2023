@@ -65,13 +65,15 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, const std::unorde
       return RC::SCHEMA_TABLE_NOT_EXIST;
     }
 
-    table->set_alias_name(select_sql.alias[i]);
+    // if (select_sql.alias.size() != 0){
+    //   table->set_alias_name(select_sql.alias[i]);
+    // }
     tables.push_back(table);
     table_map.insert(std::pair<std::string, Table *>(table_name, table));
-    if (0 != strcmp(select_sql.alias[i].c_str(), "")){
-      table_map.insert(std::pair<std::string, Table *>(select_sql.alias[i].c_str(), table));
-      alias_map.insert(std::pair<Table *, std::string>(table, select_sql.alias[i].c_str()));
-    }
+    // if (select_sql.alias.size() != 0 && 0 != strcmp(select_sql.alias[i].c_str(), "")){
+    //   table_map.insert(std::pair<std::string, Table *>(select_sql.alias[i].c_str(), table));
+    //   alias_map.insert(std::pair<Table *, std::string>(table, select_sql.alias[i].c_str()));
+    // }
   }
 
   // collect query fields in `select` statement
