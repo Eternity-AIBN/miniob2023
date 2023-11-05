@@ -79,6 +79,11 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
         Expression *expression = nullptr;
         if (ExprType::VALUE == update.exprs[k]->type()) {     // update set col1=1
           expression = new ValueExpr(((ValueExpr *)(update.exprs[k]))->get_value());
+          if (static_cast<ValueExpr*>(expression)->get_value().attr_type() == CHARS){   // 有可能是插入 TEXT，要检查长度
+            if (static_cast<ValueExpr*>(expression)->get_value().length() > 65535){
+              return RC::INTERNAL;
+            }
+          }
         } else if (ExprType::SUBQUERY == update.exprs[k]->type()) {   // update set col1=(select xxx)
           SubQueryExpression *sub_query_expr = new SubQueryExpression();
           const std::unordered_map<std::string, Table *> table_map;
