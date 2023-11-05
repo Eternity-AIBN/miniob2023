@@ -55,7 +55,8 @@ RC Table::create(int32_t table_id,
                  const char *name, 
                  const char *base_dir, 
                  int attribute_count, 
-                 const AttrInfoSqlNode attributes[])
+                 const AttrInfoSqlNode attributes[],
+                 const char *alias_name)
 {
   if (table_id < 0) {
     LOG_WARN("invalid table id. table_id=%d, table_name=%s", table_id, name);
@@ -73,6 +74,9 @@ RC Table::create(int32_t table_id,
     return RC::INVALID_ARGUMENT;
   }
 
+  if (alias_name != nullptr){
+    alias_name_ = alias_name;
+  }
   RC rc = RC::SUCCESS;
 
   // 使用 table_name.table记录一个表的元数据

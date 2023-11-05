@@ -25,8 +25,12 @@ class Field
 {
 public:
   Field() = default;
-  Field(const Table *table, const FieldMeta *field) : table_(table), field_(field)
-  {}
+  Field(const Table *table, const FieldMeta *field, const char *alias_name=nullptr) : table_(table), field_(field)
+  {
+    if(alias_name != nullptr){
+      alias_name_ = alias_name;
+    }
+  }
   Field(const Field &) = default;
 
   const Table *table() const
@@ -47,10 +51,20 @@ public:
   {
     return table_->name();
   }
+  const char *table_name_alias() const
+  {
+    return table_->alias_name();
+  }
   const char *field_name() const
   {
     return field_->name();
   }
+
+  const char *field_name_alias() const
+  {
+    return alias_name_.c_str();
+  }
+  void set_field_alias_name(std::string alias_name) { alias_name_ = alias_name; }
 
   void set_table(const Table *table)
   {
@@ -69,4 +83,5 @@ public:
 private:
   const Table *table_ = nullptr;
   const FieldMeta *field_ = nullptr;
+  std::string alias_name_="";
 };

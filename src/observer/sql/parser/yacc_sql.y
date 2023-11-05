@@ -80,6 +80,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         AVG
         SUM
         DESC
+        AS
         ASC
         SHOW
         SYNC
@@ -146,7 +147,8 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   std::vector<OrderByNode> *        order_by_list;
   std::vector<RelAttrSqlNode> *     rel_attr_list;
   std::vector<AggRelAttrSqlNode> *  agg_rel_attr_list;
-  std::vector<std::string> *        relation_list;
+  // std::vector<std::string> *        relation_list;
+  std::pair<std::vector<std::string>, std::vector<std::string>> * relation_list;
   std::vector<std::string> *        id_lists;
   struct TableAndCondition *        table_and_condition;
   struct AttributeAndExpr *         attribute_and_expr;
@@ -685,11 +687,15 @@ select_stmt:        /*  select 语句的语法解析树*/
         delete $2;
       }
       if ($5 != nullptr) {
-        $$->selection.relations.swap(*$5);
+        $$->selection.relations.swap($5->first);
+        $$->selection.alias.swap($5->second);
         delete $5;
       }
       $$->selection.relations.push_back($4);
       std::reverse($$->selection.relations.begin(), $$->selection.relations.end());
+
+      $$->selection.alias.push_back("");
+      std::reverse($$->selection.alias.begin(), $$->selection.alias.end());
 
       if ($6 != nullptr) {
         $$->selection.conditions.swap(*$6);
@@ -710,7 +716,7 @@ select_stmt:        /*  select 语句的语法解析树*/
         delete $2;
       }
       if ($5 != nullptr) {
-        $$->selection_agg.relations.swap(*$5);
+        $$->selection_agg.relations.swap($5->first);
         delete $5;
       }
       $$->selection_agg.relations.push_back($4);
@@ -742,6 +748,66 @@ select_stmt:        /*  select 语句的语法解析树*/
         delete $8;
       }
       free($4);
+    }
+    | SELECT select_attr FROM ID AS ID rel_list where opt_order_by
+    {
+      $$ = new ParsedSqlNode(SCF_SELECT);
+      if ($2 != nullptr) {
+        $$->selection.attributes.swap(*$2);
+        delete $2;
+      }
+      if ($7 != nullptr) {
+        $$->selection.relations.swap($7->first);
+        $$->selection.alias.swap($7->second);
+        delete $7;
+      }
+      $$->selection.relations.push_back($4);
+      std::reverse($$->selection.relations.begin(), $$->selection.relations.end());
+
+      $$->selection.alias.push_back($6);
+      std::reverse($$->selection.alias.begin(), $$->selection.alias.end());
+
+      if ($8 != nullptr) {
+        $$->selection.conditions.swap(*$8);
+        delete $8;
+      }
+      if ($9 != nullptr) {
+        $$->selection.orderbys.swap(*$9);
+        std::reverse($$->selection.orderbys.begin(), $$->selection.orderbys.end());
+        delete $9;
+      }
+      free($4);
+      free($6);
+    }
+    | SELECT select_attr FROM ID ID rel_list where opt_order_by
+    {
+      $$ = new ParsedSqlNode(SCF_SELECT);
+      if ($2 != nullptr) {
+        $$->selection.attributes.swap(*$2);
+        delete $2;
+      }
+      if ($6 != nullptr) {
+        $$->selection.relations.swap($6->first);
+        $$->selection.alias.swap($6->second);
+        delete $6;
+      }
+      $$->selection.relations.push_back($4);
+      std::reverse($$->selection.relations.begin(), $$->selection.relations.end());
+
+      $$->selection.alias.push_back($5);
+      std::reverse($$->selection.alias.begin(), $$->selection.alias.end());
+
+      if ($7 != nullptr) {
+        $$->selection.conditions.swap(*$7);
+        delete $7;
+      }
+      if ($8 != nullptr) {
+        $$->selection.orderbys.swap(*$8);
+        std::reverse($$->selection.orderbys.begin(), $$->selection.orderbys.end());
+        delete $8;
+      }
+      free($4);
+      free($5);
     }
     ;
 order_by_unit:
@@ -940,6 +1006,38 @@ rel_attr:
       free($1);
       free($3);
     }
+    | ID AS ID{
+      $$ = new RelAttrSqlNode;
+      $$->attribute_name = $1;
+      $$->alias = $3;
+      free($1);
+      free($3);
+    }
+    // | ID ID{
+    //   $$ = new RelAttrSqlNode;
+    //   $$->attribute_name = $1;
+    //   $$->alias = $2;
+    //   free($1);
+    //   free($2);
+    // }
+    | ID DOT ID AS ID{
+      $$ = new RelAttrSqlNode;
+      $$->relation_name  = $1;
+      $$->attribute_name = $3;
+      $$->alias = $5;
+      free($1);
+      free($3);
+      free($5);
+    }
+    // | ID DOT ID ID{
+    //   $$ = new RelAttrSqlNode;
+    //   $$->relation_name  = $1;
+    //   $$->attribute_name = $3;
+    //   $$->alias = $4;
+    //   free($1);
+    //   free($3);
+    //   free($4);
+    // }
     ;
 
 attr_list:
@@ -1009,11 +1107,38 @@ rel_list:
       if ($3 != nullptr) {
         $$ = $3;
       } else {
-        $$ = new std::vector<std::string>;
+        // $$ = new std::vector<std::string>;
+        $$ = new std::pair<std::vector<std::string>, std::vector<std::string>>;
       }
 
-      $$->push_back($2);
+      // $$->push_back($2);
+      $$->first.push_back($2);
+      $$->second.push_back("");
       free($2);
+    }
+    | COMMA ID AS ID rel_list {
+      if ($5 != nullptr) {
+        $$ = $5;
+      } else {
+        $$ = new std::pair<std::vector<std::string>, std::vector<std::string>>;
+      }
+
+      $$->first.push_back($2);
+      $$->second.push_back($4);
+      free($2);
+      free($4);
+    }
+    | COMMA ID ID rel_list {
+      if ($4 != nullptr) {
+        $$ = $4;
+      } else {
+        $$ = new std::pair<std::vector<std::string>, std::vector<std::string>>;
+      }
+
+      $$->first.push_back($2);
+      $$->second.push_back($3);
+      free($2);
+      free($3);
     }
     ;
 rel_list_join:

@@ -38,6 +38,7 @@ struct RelAttrSqlNode
 {
   std::string relation_name;   ///< relation name (may be NULL) 表名
   std::string attribute_name;  ///< attribute name              属性名
+  std::string alias;           ///< alias name                  字段的别名
 };
 
 /**
@@ -125,6 +126,7 @@ struct SelectSqlNode
   std::vector<std::string>        relations;     ///< 查询的表
   std::vector<ConditionSqlNode>   conditions;    ///< 查询条件，使用AND串联起来多个条件
   std::vector<OrderByNode>        orderbys;      ///< orderby
+  std::vector<std::string>        alias;         ///< 查询的表的别名，如果没有的话为“”（空串）
 };
 
 struct SelectAggSqlNode

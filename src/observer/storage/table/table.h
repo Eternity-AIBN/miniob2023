@@ -52,7 +52,8 @@ public:
             const char *name, 
             const char *base_dir, 
             int attribute_count, 
-            const AttrInfoSqlNode attributes[]);
+            const AttrInfoSqlNode attributes[],
+            const char *alias_name=nullptr);
 
   /**
    * 删除一个表
@@ -105,6 +106,8 @@ public:
 public:
   int32_t table_id() const { return table_meta_.table_id(); }
   const char *name() const;
+  const char *alias_name() const { return alias_name_.c_str(); }
+  void set_alias_name(std::string alias_name) { alias_name_ = alias_name; }
 
   const TableMeta &table_meta() const;
   TableMeta &table_meta();
@@ -130,4 +133,6 @@ private:
   DiskBufferPool *data_buffer_pool_ = nullptr;   /// 数据文件关联的buffer pool
   RecordFileHandler *record_handler_ = nullptr;  /// 记录操作
   std::vector<Index *> indexes_;
+
+  std::string alias_name_="";
 };

@@ -51,6 +51,7 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, const std::unorde
   // collect tables in `from` statement
   std::vector<Table *> tables;
   std::unordered_map<std::string, Table *> table_map;
+  std::unordered_map<Table *, std::string> alias_map;
   for (size_t i = 0; i < select_sql.relations.size(); i++) {
     const char *table_name = select_sql.relations[i].c_str();
     if (nullptr == table_name) {
@@ -64,8 +65,13 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, const std::unorde
       return RC::SCHEMA_TABLE_NOT_EXIST;
     }
 
+    table->set_alias_name(select_sql.alias[i]);
     tables.push_back(table);
     table_map.insert(std::pair<std::string, Table *>(table_name, table));
+    if (0 != strcmp(select_sql.alias[i].c_str(), "")){
+      table_map.insert(std::pair<std::string, Table *>(select_sql.alias[i].c_str(), table));
+      alias_map.insert(std::pair<Table *, std::string>(table, select_sql.alias[i].c_str()));
+    }
   }
 
   // collect query fields in `select` statement
@@ -74,16 +80,16 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, const std::unorde
     const RelAttrSqlNode &relation_attr = select_sql.attributes[i];
 
     if (common::is_blank(relation_attr.relation_name.c_str()) &&
-        0 == strcmp(relation_attr.attribute_name.c_str(), "*")) {
+        0 == strcmp(relation_attr.attribute_name.c_str(), "*")) {     // select * from xxx
       for (Table *table : tables) {
         wildcard_fields(table, query_fields);
       }
 
-    } else if (!common::is_blank(relation_attr.relation_name.c_str())) {
+    } else if (!common::is_blank(relation_attr.relation_name.c_str())) {      // select xxx.xxx from xxx
       const char *table_name = relation_attr.relation_name.c_str();
       const char *field_name = relation_attr.attribute_name.c_str();
 
-      if (0 == strcmp(table_name, "*")) {
+      if (0 == strcmp(table_name, "*")) {                        // select *.* from xxx
         if (0 != strcmp(field_name, "*")) {
           LOG_WARN("invalid field name while table is *. attr=%s", field_name);
           return RC::SCHEMA_FIELD_MISSING;
@@ -91,7 +97,7 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, const std::unorde
         for (Table *table : tables) {
           wildcard_fields(table, query_fields);
         }
-      } else {
+      } else {                                      // select t1.xxx from xxx
         auto iter = table_map.find(table_name);
         if (iter == table_map.end()) {
           LOG_WARN("no such table in from list: %s", table_name);
@@ -99,32 +105,32 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, const std::unorde
         }
 
         Table *table = iter->second;
-        if (0 == strcmp(field_name, "*")) {
+        if (0 == strcmp(field_name, "*")) {             // select t1.* from xxx
           wildcard_fields(table, query_fields);
-        } else {
-          const FieldMeta *field_meta = table->table_meta().field(field_name);
+        } else {                                        // select t1.col1 from xxx
+          FieldMeta *field_meta = table->table_meta().field(field_name);
           if (nullptr == field_meta) {
             LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), field_name);
             return RC::SCHEMA_FIELD_MISSING;
           }
 
-          query_fields.push_back(Field(table, field_meta));
+          query_fields.push_back(Field(table, field_meta, relation_attr.alias.c_str()));
         }
       }
-    } else {
+    } else {            // select col1 from xxx
       if (tables.size() != 1) {
         LOG_WARN("invalid. I do not know the attr's table. attr=%s", relation_attr.attribute_name.c_str());
         return RC::SCHEMA_FIELD_MISSING;
       }
 
       Table *table = tables[0];
-      const FieldMeta *field_meta = table->table_meta().field(relation_attr.attribute_name.c_str());
+      FieldMeta *field_meta = table->table_meta().field(relation_attr.attribute_name.c_str());
       if (nullptr == field_meta) {
         LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), relation_attr.attribute_name.c_str());
         return RC::SCHEMA_FIELD_MISSING;
       }
-
-      query_fields.push_back(Field(table, field_meta));
+      
+      query_fields.push_back(Field(table, field_meta, relation_attr.alias.c_str()));
     }
   }
 
