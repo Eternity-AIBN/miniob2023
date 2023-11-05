@@ -70,6 +70,11 @@ RC InsertStmt::create(Db *db, InsertSqlNode &inserts, Stmt *&stmt)
       const FieldMeta *field_meta = table_meta.field(i + sys_field_num);
       const AttrType field_type = field_meta->type();
       const AttrType value_type = values[i].attr_type();
+      if (value_type == CHARS){   // 有可能是插入 TEXT，要检查长度
+        if (values[i].length() > 65535){
+          return RC::INTERNAL;
+        }
+      }
       // check null first
       if (AttrType::NULLS == value_type) {  // 插入 null 值
         if (!field_meta->nullable()) {      // 该列 not null

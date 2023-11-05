@@ -82,6 +82,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         DESC
         AS
         ASC
+        TEXT
         SHOW
         SYNC
         INSERT
@@ -481,6 +482,33 @@ attr_def:
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = 4;
+      $$->nullable = false;
+      free($1);
+		}
+    | ID TEXT
+    {
+      $$ = new AttrInfoSqlNode;
+      $$->type = AttrType::CHARS;
+      $$->name = $1;
+      $$->length = 65535;
+      $$->nullable = true;
+      free($1);
+    }
+    | ID TEXT NULLABLE
+		{
+			$$ = new AttrInfoSqlNode;
+      $$->type = AttrType::CHARS;
+      $$->name = $1;
+      $$->length = 65535;
+      $$->nullable = true;
+      free($1);
+		}
+    | ID TEXT NOT NULLABLE
+		{
+			$$ = new AttrInfoSqlNode;
+      $$->type = AttrType::CHARS;
+      $$->name = $1;
+      $$->length = 65535;
       $$->nullable = false;
       free($1);
 		}
@@ -1013,13 +1041,6 @@ rel_attr:
       free($1);
       free($3);
     }
-    // | ID ID{
-    //   $$ = new RelAttrSqlNode;
-    //   $$->attribute_name = $1;
-    //   $$->alias = $2;
-    //   free($1);
-    //   free($2);
-    // }
     | ID DOT ID AS ID{
       $$ = new RelAttrSqlNode;
       $$->relation_name  = $1;
@@ -1029,15 +1050,6 @@ rel_attr:
       free($3);
       free($5);
     }
-    // | ID DOT ID ID{
-    //   $$ = new RelAttrSqlNode;
-    //   $$->relation_name  = $1;
-    //   $$->attribute_name = $3;
-    //   $$->alias = $4;
-    //   free($1);
-    //   free($3);
-    //   free($4);
-    // }
     ;
 
 attr_list:

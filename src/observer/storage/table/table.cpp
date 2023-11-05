@@ -310,26 +310,6 @@ RC Table::insert_record(std::vector<Record> &record)
       }
     }
   }
-
-  // rc = record_handler_->insert_record(record[0].data(), table_meta_.record_size(), &record[0].rid());
-  // if (rc != RC::SUCCESS) {
-  //   LOG_ERROR("Insert record failed. table name=%s, rc=%s", table_meta_.name(), strrc(rc));
-  //   return rc;
-  // }
-
-  // rc = insert_entry_of_indexes(record[0].data(), record[0].rid());
-  // if (rc != RC::SUCCESS) { // 可能出现了键值重复
-  //   RC rc2 = record_handler_->delete_record(&record[0].rid());
-  //   if (rc2 != RC::SUCCESS) {
-  //     LOG_PANIC("Failed to rollback record data when insert index entries failed. table name=%s, rc=%d:%s",
-  //               name(), rc2, strrc(rc2));
-  //     rc2 = delete_entry_of_indexes(record[0].data(), record[0].rid(), false/*error_on_not_exists*/);
-  //     if (rc2 != RC::SUCCESS) {
-  //       LOG_ERROR("Failed to rollback index data when insert index entries failed. table name=%s, rc=%d:%s",
-  //                 name(), rc2, strrc(rc2));
-  //     }
-  //   }
-  // }
   return rc;
 }
 
